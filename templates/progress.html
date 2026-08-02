@@ -12,6 +12,24 @@
       <span>{{ row.label }}</span>
       <span class="tier-badge tier-{{ row.tier }}">T{{ row.tier }}</span>
     </div>
+
+    {% if row.stages %}
+      <div style="margin:8px 0 4px">
+        {% for stage in row.stages %}
+        <div style="display:flex;align-items:center;gap:6px;padding:2px 0;
+                     {{ 'font-weight:700' if stage.is_last_tested }}">
+          <span style="width:16px;color:{{ '#7FA06B' if stage.reached else '#555' }}">
+            {{ '✓' if stage.reached else '·' }}
+          </span>
+          <span style="font-size:13px;color:{{ '#F1EAD9' if stage.is_last_tested else ('#ccc' if stage.reached else '#666') }}">
+            {{ stage.name }}
+          </span>
+          {% if stage.is_last_tested %}<span class="tier-badge tier-{{ stage.tier }}" style="font-size:9px">last tested</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     {% if row.last_date %}
       <p class="muted" style="margin:4px 0">
         {{ t('last_assessed') }}: {{ row.last_date }} ({{ row.exercise_name }}) &nbsp;·&nbsp;
@@ -19,7 +37,7 @@
       </p>
       <p style="font-size:12px;margin:2px 0;
         color:{{ '#7FA06B' if row.recommendation=='progress' else '#C4623C' if row.recommendation=='regress' else '#999' }}">
-        {{ row.review }}
+        {{ row.review }}{% if row.next_stage_name %} Next stage: <strong>{{ row.next_stage_name }}</strong>.{% endif %}
       </p>
     {% else %}
       <p class="muted" style="margin:4px 0">{{ t('not_tested') }}</p>

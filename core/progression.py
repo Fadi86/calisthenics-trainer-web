@@ -6,10 +6,10 @@ from core import db as dbmod
 from core import library
 
 
-def start_session(conn, day_type=None, schedule_day_id=None):
+def start_session(conn, profile_id, day_type=None, schedule_day_id=None):
     cur = conn.execute(
-        "INSERT INTO sessions (date, schedule_day_id, day_type, status) VALUES (?, ?, ?, 'in_progress')",
-        (dbmod.today_str(), schedule_day_id, day_type)
+        "INSERT INTO sessions (date, schedule_day_id, day_type, status, profile_id) VALUES (?, ?, ?, 'in_progress', ?)",
+        (dbmod.today_str(), schedule_day_id, day_type, profile_id)
     )
     conn.commit()
     return cur.lastrowid

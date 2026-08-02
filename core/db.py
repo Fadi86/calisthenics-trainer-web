@@ -47,9 +47,11 @@ CREATE TABLE IF NOT EXISTS exercises (
 );
 
 CREATE TABLE IF NOT EXISTS user_tiers (
-    movement_key TEXT PRIMARY KEY,
+    profile_id INTEGER NOT NULL,
+    movement_key TEXT NOT NULL,
     current_tier INTEGER NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (profile_id, movement_key)
 );
 
 CREATE TABLE IF NOT EXISTS assessments (
@@ -137,16 +139,19 @@ CREATE TABLE IF NOT EXISTS exercise_videos (
     FOREIGN KEY (exercise_id) REFERENCES exercises(id)
 );
 
-CREATE TABLE IF NOT EXISTS profile (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    name TEXT,
+CREATE TABLE IF NOT EXISTS profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
     gender TEXT,
     age INTEGER,
     weight_kg REAL,
     height_cm REAL,
+    created_at TEXT NOT NULL,
     updated_at TEXT
 );
 """
+
+MAX_PROFILES = 5
 
 DEFAULT_SETTINGS = {
     "reassessment_interval_days": "60",
@@ -165,6 +170,7 @@ def init_db(db_path=None, data_dir=None):
     conn.executescript(SCHEMA)
     conn.commit()
     _ensure_columns(conn)
+    _migrate_to_profiles(conn)
     _seed_settings(conn)
     _seed_exercises(conn, data_dir or DATA_DIR)
     _backfill_muscle_data(conn, data_dir or DATA_DIR)
@@ -219,6 +225,13 @@ def _ensure_columns(conn):
         conn.execute("ALTER TABLE schedule_days ADD COLUMN week_number INTEGER DEFAULT 1")
     if "week_date" not in schedule_days_cols:
         conn.execute("ALTER TABLE schedule_days ADD COLUMN week_date TEXT")
+    if "profile_id" not in schedule_days_cols:
+        conn.execute("ALTER TABLE schedule_days ADD COLUMN profile_id INTEGER")
+
+    for table in ("assessments", "sessions", "health_metrics"):
+        cols = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if "profile_id" not in cols:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN profile_id INTEGER")
 
     conn.commit()
 
@@ -324,18 +337,132 @@ def set_setting(conn, key, value):
     conn.commit()
 
 
-def get_profile(conn):
-    row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
-    return dict(row) if row else {}
+def _migrate_to_profiles(conn):
+    """
+    Multi-profile support (up to MAX_PROFILES). Handles two real scenarios:
+    1. Fresh install: nothing to migrate, profiles stays empty until the
+       user creates one through the UI.
+    2. Existing single-profile install (real production data from before
+       this feature existed): migrates the old singular 'profile' table
+       (if present) into profiles as profile #1, and backfills profile_id=1
+       onto every existing assessment/session/health record/schedule day so
+       nothing is lost or orphaned.
+    user_tiers' primary key changes from (movement_key) to
+    (profile_id, movement_key) - SQLite can't ALTER a primary key, so this
+    recreates the table when needed.
+    """
+    tables = {row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+
+    user_tiers_cols = {row["name"] for row in conn.execute("PRAGMA table_info(user_tiers)")} if "user_tiers" in tables else set()
+    needs_recreate = "user_tiers" in tables and "profile_id" not in user_tiers_cols
+
+    profile_count = conn.execute("SELECT COUNT(*) c FROM profiles").fetchone()["c"]
+    has_old_profile_table = "profile" in tables
+    old_profile_row = None
+    if has_old_profile_table:
+        old_profile_row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
+
+    migrating_existing_data = profile_count == 0 and (old_profile_row is not None or needs_recreate
+                                                        or _has_any_unscoped_data(conn))
+
+    default_profile_id = None
+    if migrating_existing_data:
+        name = old_profile_row["name"] if old_profile_row and old_profile_row["name"] else "Profile 1"
+        cur = conn.execute(
+            "INSERT INTO profiles (name, gender, age, weight_kg, height_cm, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (name, old_profile_row["gender"] if old_profile_row else None,
+             old_profile_row["age"] if old_profile_row else None,
+             old_profile_row["weight_kg"] if old_profile_row else None,
+             old_profile_row["height_cm"] if old_profile_row else None,
+             now_iso(), now_iso())
+        )
+        default_profile_id = cur.lastrowid
+        conn.commit()
+
+        for table in ("assessments", "sessions", "health_metrics", "schedule_days"):
+            conn.execute(f"UPDATE {table} SET profile_id = ? WHERE profile_id IS NULL", (default_profile_id,))
+        conn.commit()
+
+    if needs_recreate:
+        conn.execute("""
+            CREATE TABLE user_tiers_new (
+                profile_id INTEGER NOT NULL,
+                movement_key TEXT NOT NULL,
+                current_tier INTEGER NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (profile_id, movement_key)
+            )
+        """)
+        pid = default_profile_id or 1
+        old_rows = conn.execute("SELECT * FROM user_tiers").fetchall()
+        for row in old_rows:
+            conn.execute(
+                "INSERT INTO user_tiers_new (profile_id, movement_key, current_tier, updated_at) VALUES (?,?,?,?)",
+                (pid, row["movement_key"], row["current_tier"], row["updated_at"])
+            )
+        conn.execute("DROP TABLE user_tiers")
+        conn.execute("ALTER TABLE user_tiers_new RENAME TO user_tiers")
+        conn.commit()
+
+    if has_old_profile_table:
+        conn.execute("DROP TABLE profile")
+        conn.commit()
 
 
-def set_profile(conn, name, gender, age, weight_kg, height_cm):
-    conn.execute("""
-        INSERT INTO profile (id, name, gender, age, weight_kg, height_cm, updated_at)
-        VALUES (1, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET name=excluded.name, gender=excluded.gender, age=excluded.age,
-            weight_kg=excluded.weight_kg, height_cm=excluded.height_cm, updated_at=excluded.updated_at
-    """, (name, gender, age, weight_kg, height_cm, now_iso()))
+def _has_any_unscoped_data(conn):
+    """True if any pre-existing row predates profile_id (needs migrating)."""
+    for table in ("assessments", "sessions", "health_metrics", "schedule_days"):
+        cols = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if "profile_id" not in cols:
+            continue
+        row = conn.execute(f"SELECT COUNT(*) c FROM {table} WHERE profile_id IS NULL").fetchone()
+        if row["c"] > 0:
+            return True
+    return False
+
+
+def get_profiles(conn):
+    return [dict(r) for r in conn.execute("SELECT * FROM profiles ORDER BY id").fetchall()]
+
+
+def get_profile(conn, profile_id):
+    row = conn.execute("SELECT * FROM profiles WHERE id = ?", (profile_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def create_profile(conn, name, gender=None, age=None, weight_kg=None, height_cm=None):
+    count = conn.execute("SELECT COUNT(*) c FROM profiles").fetchone()["c"]
+    if count >= MAX_PROFILES:
+        raise ValueError(f"Maximum of {MAX_PROFILES} profiles reached.")
+    cur = conn.execute(
+        "INSERT INTO profiles (name, gender, age, weight_kg, height_cm, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (name, gender, age, weight_kg, height_cm, now_iso(), now_iso())
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_profile(conn, profile_id, name, gender, age, weight_kg, height_cm):
+    conn.execute(
+        "UPDATE profiles SET name=?, gender=?, age=?, weight_kg=?, height_cm=?, updated_at=? WHERE id=?",
+        (name, gender, age, weight_kg, height_cm, now_iso(), profile_id)
+    )
+    conn.commit()
+
+
+def delete_profile(conn, profile_id):
+    """Deletes a profile and everything scoped to it. Does not touch
+    the shared exercise library."""
+    conn.execute("DELETE FROM session_sets WHERE session_id IN (SELECT id FROM sessions WHERE profile_id=?)", (profile_id,))
+    conn.execute("DELETE FROM sessions WHERE profile_id = ?", (profile_id,))
+    conn.execute("DELETE FROM schedule_items WHERE schedule_day_id IN (SELECT id FROM schedule_days WHERE profile_id=?)", (profile_id,))
+    conn.execute("DELETE FROM schedule_days WHERE profile_id = ?", (profile_id,))
+    conn.execute("DELETE FROM assessments WHERE profile_id = ?", (profile_id,))
+    conn.execute("DELETE FROM user_tiers WHERE profile_id = ?", (profile_id,))
+    conn.execute("DELETE FROM health_metrics WHERE profile_id = ?", (profile_id,))
+    conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,))
     conn.commit()
 
 

@@ -4,6 +4,41 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.0.0 — multi-profile support (up to 5 people)
+
+One app password still gates the whole site (unchanged). After logging in,
+you now pick **which profile's data** to view/edit from a shared list of
+up to 5 - no per-person password, since this is for a small trusted
+testing group, not a public multi-tenant product.
+
+- **"Who's training?" screen** appears after login if no profile is
+  selected yet. Create up to 5 profiles, switch between them any time via
+  the name shown in the top-right corner, delete a profile (and everything
+  scoped to it) if needed.
+- **Every table that holds personal data is now profile-scoped**:
+  assessments, tier progress, sessions/sets, health metrics, and the
+  weekly schedule history. Two profiles' data never mixes.
+- **Backup export/import is now per-profile** - exporting only downloads
+  the currently active profile's data, and importing only restores into
+  the currently active profile (never overwrites someone else's).
+
+### If you already had real data (your own account before this update)
+
+Your existing data automatically migrates into a real profile named after
+whatever was already in your Profile page (or "Profile 1" if you hadn't
+filled that in) - nothing is deleted. This was tested against a simulated
+copy of the actual production schema/data before shipping.
+
+### Updating your already-deployed PythonAnywhere site
+
+```
+cd ~/calisthenics-trainer-web
+git pull
+```
+Then go to the Web tab and click Reload. First visit after updating will
+either ask for your password (unchanged) or, if you're already logged in,
+take you straight to your migrated profile.
+
 ## v4.0.0 — what's new
 
 - **Password login** — first visit sets a password, every visit after

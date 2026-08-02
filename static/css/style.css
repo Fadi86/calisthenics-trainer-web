@@ -57,6 +57,8 @@ button:active { opacity: 0.8; }
 .role-skill { background: #5a3a5a; }
 .role-main { background: #5a4a2a; }
 .role-extra { background: #444; }
+.role-conditioning { background: #2a4a5a; }
+.category-badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #2a3a4a; color: #9ab; white-space: nowrap; }
 .tier-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #2a4a6a; color: #bcd; }
 .ex-name { flex: 1; min-width: 140px; font-size: 14px; }
 .ex-target { font-size: 12px; color: #999; }

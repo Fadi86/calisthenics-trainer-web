@@ -113,12 +113,12 @@ def import_json(conn, path, source="json_import"):
     return {"inserted": inserted, "skipped": skipped}
 
 
-def recent_metrics(conn, days=7):
+def recent_metrics(conn, profile_id, days=7):
     rows = conn.execute("""
         SELECT date, metric, AVG(value) as avg_value, unit
         FROM health_metrics
-        WHERE date >= date('now', ?)
+        WHERE profile_id = ? AND date >= date('now', ?)
         GROUP BY date, metric
         ORDER BY date DESC
-    """, (f"-{days} days",)).fetchall()
+    """, (profile_id, f"-{days} days")).fetchall()
     return [dict(r) for r in rows]

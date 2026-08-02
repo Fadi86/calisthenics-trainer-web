@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who's training?</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="content" style="max-width:420px;margin-top:40px">
+  <h1>Who's training?</h1>
+  <p class="muted">{{ profiles|length }} of {{ max_profiles }} profiles used.</p>
+
+  {% for p in profiles %}
+  <div class="card row" style="justify-content: space-between; align-items:center">
+    <a href="{{ url_for('profile_select', profile_id=p.id) }}" style="flex:1;font-size:16px;font-weight:600;text-decoration:none;color:#eee">
+      {{ p.name }}
+    </a>
+    <form method="post" action="{{ url_for('profile_delete', profile_id=p.id) }}" onsubmit="return confirm('Delete {{ p.name }} and all their data? This cannot be undone.')">
+      <button type="submit" class="danger" style="padding:6px 10px;font-size:12px">Delete</button>
+    </form>
+  </div>
+  {% endfor %}
+
+  {% if profiles|length < max_profiles %}
+  <div class="card">
+    <strong>+ Add a profile</strong>
+    <form method="post" action="{{ url_for('profile_create') }}" style="margin-top:8px">
+      <input type="text" name="name" placeholder="Name" autofocus>
+      <button type="submit" style="margin-top:8px">Create &amp; Start</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="muted">Maximum of {{ max_profiles }} profiles reached — delete one to add another.</p>
+  {% endif %}
+
+  {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+
+  <a href="{{ url_for('logout') }}" style="font-size:12px;color:#888">Log out</a>
+</div>
+</body>
+</html>

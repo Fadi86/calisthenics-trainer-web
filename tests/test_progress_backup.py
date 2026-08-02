@@ -14,6 +14,7 @@ dbmod.init_db(db_path=TMP_DB, data_dir=DATA_DIR)
 app_module.dbmod.DB_PATH = TMP_DB
 app_module.app.config["TESTING"] = True
 client = app_module.app.test_client()
+client.post("/profiles/create", data={"name": "Fadi"}, follow_redirects=True)
 
 
 def check(label, cond):

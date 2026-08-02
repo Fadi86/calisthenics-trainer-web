@@ -1,11 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-{% set icons = {'pull':'💪','push':'🔼','legs':'🦵','core':'🎯','handstand':'🤸','conditioning':'🏃','warmup':'🔥','mobility':'🧘'} %}
 <h1>{{ t('title_library') }}</h1>
 
 <form method="get" action="{{ url_for('library_view') }}" class="row">
   <select name="category" onchange="this.form.submit()">
-    {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ icons.get(c,'') }} {{ c }}</option>{% endfor %}
+    {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ category_labels.get(c, c) }}</option>{% endfor %}
   </select>
   <select name="tier" onchange="this.form.submit()">
     <option value="all" {{ 'selected' if tier == 'all' }}>All tiers</option>
@@ -21,10 +20,13 @@
 {% if detail %}
 <div class="card">
   <div class="row" style="justify-content: space-between">
-    <strong>{{ icons.get(detail.category,'') }} {{ detail.name }}</strong>
+    <strong>{{ detail.name }}</strong>
     <span class="tier-badge tier-{{ detail.tier }}">T{{ detail.tier }}</span>
   </div>
-  <p class="muted">{{ detail.category }}/{{ detail.subcategory }} — {{ detail.type }}, {{ detail.modality }}</p>
+  <div class="row" style="margin-top:4px">
+    <span class="category-badge">{{ category_labels.get(detail.category, detail.category) }}</span>
+    <span class="role-tag {{ detail.role_class }}">{{ detail.role_label }}</span>
+  </div>
   <p class="muted">Equipment: {{ detail.equipment | join(', ') }}</p>
   {% if detail.primary_muscles %}<p class="muted">Primary: {{ detail.primary_muscles | join(', ') }}</p>{% endif %}
   {% if detail.secondary_muscles %}<p class="muted">Secondary: {{ detail.secondary_muscles | join(', ') }}</p>{% endif %}
@@ -43,10 +45,10 @@
 <div class="card">
   {% for e in exercises %}
     <div class="exercise-row">
-      <span class="type-icon">{{ icons.get(e.category,'') }}</span>
+      <span class="category-badge">{{ category_labels.get(e.category, e.category) }}</span>
       <span class="tier-badge tier-{{ e.tier }}">T{{ e.tier }}</span>
       <a class="ex-name" href="{{ url_for('library_view', category=category, tier=tier, type=type_, exercise=e.id) }}">{{ e.name }}</a>
-      {% if e.type == 'extra' %}<span class="role-tag">extra</span>{% endif %}
+      <span class="role-tag {{ e.role_class }}">{{ e.role_label }}</span>
     </div>
   {% endfor %}
 </div>

@@ -5,6 +5,10 @@ Same core engine as the Windows app (core/ is byte-for-byte the same code),
 just a Flask front end instead of CustomTkinter — so you can open it from
 any phone browser instead of dealing with iOS sideloading.
 
+Supports up to db.MAX_PROFILES (5) people sharing one deployment - one app
+password gates the whole site, then each visit picks which profile's data
+to view/edit. No per-person password; fine for a small trusted testing group.
+
 Run: python app.py
 Then open http://localhost:5000 on this machine, or http://<this-pc-lan-ip>:5000
 from your phone on the same WiFi. See README.md for making it reachable
@@ -14,7 +18,7 @@ import os
 import json
 import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session as flask_session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session as flask_session, Response
 
 from core import db as dbmod
 from core import library
@@ -30,6 +34,11 @@ from core.i18n import t as translate
 from core.version import APP_VERSION
 
 app = Flask(__name__)
+PLAN_NAME = "My Plan"
+
+
+def get_conn():
+    return dbmod.get_connection()
 
 
 def _init_secret_key():
@@ -41,24 +50,24 @@ def _init_secret_key():
     conn.close()
     return key
 
-PLAN_NAME = "My Plan"
 
-
-def get_conn():
-    return dbmod.get_connection()
+def current_profile_id():
+    return flask_session.get("profile_id")
 
 
 @app.before_request
-def require_login():
+def require_login_and_profile():
     if request.endpoint in ("login", "static"):
         return
     conn = get_conn()
     password_hash = dbmod.get_setting(conn, "app_password_hash", "")
     conn.close()
-    if not password_hash:
-        return  # no password set yet - first-run flow handled by the login page itself
-    if not flask_session.get("authenticated"):
+    if password_hash and not flask_session.get("authenticated"):
         return redirect(url_for("login"))
+    if request.endpoint in ("profiles_view", "profile_create", "profile_select", "profile_delete"):
+        return
+    if not current_profile_id():
+        return redirect(url_for("profiles_view"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -80,7 +89,7 @@ def login():
                 dbmod.set_setting(conn, "app_password_hash", generate_password_hash(new_pw))
                 flask_session["authenticated"] = True
                 conn.close()
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("profiles_view"))
         else:
             entered = request.form.get("password", "")
             if check_password_hash(password_hash, entered):
@@ -95,16 +104,68 @@ def login():
 
 @app.route("/logout")
 def logout():
-    flask_session.pop("authenticated", None)
+    flask_session.clear()
     return redirect(url_for("login"))
+
+
+# ---------------------------------------------------------------------------
+# Profiles (up to MAX_PROFILES people sharing this one deployment)
+# ---------------------------------------------------------------------------
+@app.route("/profiles")
+def profiles_view():
+    conn = get_conn()
+    profiles = dbmod.get_profiles(conn)
+    conn.close()
+    return render_template("profiles.html", profiles=profiles, max_profiles=dbmod.MAX_PROFILES)
+
+
+@app.route("/profiles/create", methods=["POST"])
+def profile_create():
+    conn = get_conn()
+    name = request.form.get("name", "").strip()
+    error = None
+    if not name:
+        error = "Name is required."
+    else:
+        try:
+            new_id = dbmod.create_profile(conn, name)
+            flask_session["profile_id"] = new_id
+            conn.close()
+            return redirect(url_for("dashboard"))
+        except ValueError as e:
+            error = str(e)
+    profiles = dbmod.get_profiles(conn)
+    conn.close()
+    return render_template("profiles.html", profiles=profiles, max_profiles=dbmod.MAX_PROFILES, error=error)
+
+
+@app.route("/profiles/select/<int:profile_id>")
+def profile_select(profile_id):
+    flask_session["profile_id"] = profile_id
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/profiles/delete/<int:profile_id>", methods=["POST"])
+def profile_delete(profile_id):
+    conn = get_conn()
+    dbmod.delete_profile(conn, profile_id)
+    conn.close()
+    if current_profile_id() == profile_id:
+        flask_session.pop("profile_id", None)
+    return redirect(url_for("profiles_view"))
 
 
 @app.context_processor
 def inject_globals():
     conn = get_conn()
     lang = dbmod.get_setting(conn, "language", "en")
+    active_profile = None
+    pid = current_profile_id()
+    if pid:
+        active_profile = dbmod.get_profile(conn, pid)
     conn.close()
-    return {"app_version": APP_VERSION, "t": lambda key: translate(key, lang), "lang": lang}
+    return {"app_version": APP_VERSION, "t": lambda key: translate(key, lang), "lang": lang,
+            "active_profile": active_profile}
 
 
 def resolve_watch_url(conn, exercise):
@@ -120,10 +181,12 @@ def resolve_watch_url(conn, exercise):
 @app.route("/")
 def dashboard():
     conn = get_conn()
-    due, reason = reminders.is_reassessment_due(conn)
+    pid = current_profile_id()
+    due, reason = reminders.is_reassessment_due(conn, pid)
     ex_count = conn.execute("SELECT COUNT(*) c FROM exercises").fetchone()["c"]
-    as_count = conn.execute("SELECT COUNT(*) c FROM assessments").fetchone()["c"]
-    se_count = conn.execute("SELECT COUNT(*) c FROM sessions WHERE status='completed'").fetchone()["c"]
+    as_count = conn.execute("SELECT COUNT(*) c FROM assessments WHERE profile_id = ?", (pid,)).fetchone()["c"]
+    se_count = conn.execute("SELECT COUNT(*) c FROM sessions WHERE status='completed' AND profile_id = ?",
+                             (pid,)).fetchone()["c"]
     conn.close()
     return render_template("dashboard.html", due=due, reason=reason,
                             ex_count=ex_count, as_count=as_count, se_count=se_count)
@@ -138,6 +201,7 @@ CORE_CATEGORIES = ["pull", "push", "core", "legs"]
 @app.route("/assessment", methods=["GET", "POST"])
 def assessment():
     conn = get_conn()
+    pid = current_profile_id()
     categories = CORE_CATEGORIES
     selected_category = request.values.get("category", categories[0])
     exercises = library.list_exercises(conn, category=selected_category)
@@ -157,7 +221,7 @@ def assessment():
             result = {"error": f"{ex['name']} is measured by reps — fill in the Reps field."}
         else:
             result = assess_mod.record_assessment(
-                conn, exercise_id,
+                conn, pid, exercise_id,
                 reps=int(reps) if reps else None,
                 hold_seconds=float(hold) if hold else None,
                 weight_kg=float(weight) if weight else None,
@@ -171,15 +235,16 @@ def assessment():
 @app.route("/assessment/max", methods=["POST"])
 def assessment_max():
     conn = get_conn()
+    pid = current_profile_id()
     exercise_id = request.form.get("exercise_id")
     weight = float(request.form.get("weight_kg"))
     ex = library.get_exercise(conn, exercise_id)
     if ex["metric_type"] == "hold_seconds":
         hold = float(request.form.get("hold_seconds"))
-        assess_mod.record_assessment(conn, exercise_id, hold_seconds=hold, weight_kg=weight)
+        assess_mod.record_assessment(conn, pid, exercise_id, hold_seconds=hold, weight_kg=weight)
     else:
         reps = int(request.form.get("reps"))
-        assess_mod.record_assessment(conn, exercise_id, reps=reps, weight_kg=weight)
+        assess_mod.record_assessment(conn, pid, exercise_id, reps=reps, weight_kg=weight)
     conn.close()
     return redirect(url_for("progress_view"))
 
@@ -190,10 +255,11 @@ def assessment_max():
 @app.route("/progress")
 def progress_view():
     conn = get_conn()
-    detail = assess_mod.get_progress_detail(conn)
-    pullup_max = assess_mod.get_weighted_max(conn, "pull_weighted_pullup")
-    dip_max = assess_mod.get_weighted_max(conn, "push_weighted_dip")
-    plank_max = assess_mod.get_weighted_max(conn, "core_weighted_plank")
+    pid = current_profile_id()
+    detail = assess_mod.get_progress_detail(conn, pid)
+    pullup_max = assess_mod.get_weighted_max(conn, pid, "pull_weighted_pullup")
+    dip_max = assess_mod.get_weighted_max(conn, pid, "push_weighted_dip")
+    plank_max = assess_mod.get_weighted_max(conn, pid, "core_weighted_plank")
     conn.close()
     return render_template("progress.html", detail=detail, pullup_max=pullup_max, dip_max=dip_max,
                             plank_max=plank_max)
@@ -202,14 +268,15 @@ def progress_view():
 @app.route("/profile", methods=["GET", "POST"])
 def profile_view():
     conn = get_conn()
+    pid = current_profile_id()
     if request.method == "POST":
-        dbmod.set_profile(
-            conn, request.form.get("name", ""), request.form.get("gender", ""),
+        dbmod.update_profile(
+            conn, pid, request.form.get("name", ""), request.form.get("gender", ""),
             int(request.form.get("age")) if request.form.get("age") else None,
             float(request.form.get("weight_kg")) if request.form.get("weight_kg") else None,
             float(request.form.get("height_cm")) if request.form.get("height_cm") else None,
         )
-    profile = dbmod.get_profile(conn)
+    profile = dbmod.get_profile(conn, pid)
     conn.close()
     return render_template("profile.html", profile=profile)
 
@@ -217,9 +284,10 @@ def profile_view():
 @app.route("/calendar")
 def calendar_view():
     conn = get_conn()
-    weeks = scheduler.get_all_weeks(conn, PLAN_NAME)
+    pid = current_profile_id()
+    weeks = scheduler.get_all_weeks(conn, pid, PLAN_NAME)
     selected_week = request.args.get("week", type=int)
-    plan = scheduler.get_schedule(conn, PLAN_NAME, week_number=selected_week) if weeks else []
+    plan = scheduler.get_schedule(conn, pid, PLAN_NAME, week_number=selected_week) if weeks else []
     for day in plan:
         for item in day["items"]:
             item["watch_url"] = resolve_watch_url(conn, item["exercise"])
@@ -229,7 +297,7 @@ def calendar_view():
 
 
 # ---------------------------------------------------------------------------
-# Library
+# Library (shared across all profiles - it's reference content, not personal data)
 # ---------------------------------------------------------------------------
 @app.route("/library")
 def library_view():
@@ -245,6 +313,9 @@ def library_view():
         tier=None if tier == "all" else int(tier),
         type_=None if type_ == "all" else type_,
     )
+    for e in exercises:
+        e["role_label"], e["role_class"] = library.classify_role(e)
+
     detail_id = request.args.get("exercise")
     detail = None
     watch_url = None
@@ -252,10 +323,12 @@ def library_view():
         detail = library.get_exercise(conn, detail_id)
         if detail:
             detail["siblings"] = library.get_rotation_siblings(conn, detail_id)
+            detail["role_label"], detail["role_class"] = library.classify_role(detail)
             watch_url = resolve_watch_url(conn, detail)
     conn.close()
     return render_template("library.html", categories=categories, category=category, tier=tier,
-                            type_=type_, exercises=exercises, detail=detail, watch_url=watch_url)
+                            type_=type_, exercises=exercises, detail=detail, watch_url=watch_url,
+                            category_labels=library.CATEGORY_LABELS)
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +337,8 @@ def library_view():
 @app.route("/schedule")
 def schedule_view():
     conn = get_conn()
-    plan = scheduler.get_schedule(conn, PLAN_NAME)
+    pid = current_profile_id()
+    plan = scheduler.get_schedule(conn, pid, PLAN_NAME)
     for day in plan:
         for item in day["items"]:
             item["watch_url"] = resolve_watch_url(conn, item["exercise"])
@@ -277,10 +351,11 @@ def schedule_view():
 @app.route("/schedule/generate", methods=["POST"])
 def schedule_generate():
     conn = get_conn()
+    pid = current_profile_id()
     days = int(request.form.get("days", 4))
     extra_shoulder = request.form.get("extra_shoulder") == "on"
     extra_hip = request.form.get("extra_hip") == "on"
-    scheduler.generate_schedule(conn, days, plan_name=PLAN_NAME,
+    scheduler.generate_schedule(conn, pid, days, plan_name=PLAN_NAME,
                                  extra_shoulder_mobility=extra_shoulder, extra_hip_mobility=extra_hip)
     conn.close()
     return redirect(url_for("schedule_view"))
@@ -329,7 +404,8 @@ def api_exercises():
 @app.route("/train")
 def train_view():
     conn = get_conn()
-    plan = scheduler.get_schedule(conn, PLAN_NAME)
+    pid = current_profile_id()
+    plan = scheduler.get_schedule(conn, pid, PLAN_NAME)
     day_index = int(request.args.get("day", 0))
     day = plan[day_index] if plan and day_index < len(plan) else None
     if day:
@@ -344,8 +420,9 @@ def train_view():
 @app.route("/api/train/start", methods=["POST"])
 def api_train_start():
     conn = get_conn()
+    pid = current_profile_id()
     data = request.get_json(force=True)
-    sid = progression.start_session(conn, day_type=data.get("day_type"),
+    sid = progression.start_session(conn, pid, day_type=data.get("day_type"),
                                       schedule_day_id=data.get("schedule_day_id"))
     flask_session["active_session_id"] = sid
     conn.close()
@@ -385,19 +462,22 @@ def api_train_log_set():
 @app.route("/health", methods=["GET", "POST"])
 def health_view():
     conn = get_conn()
+    pid = current_profile_id()
     if request.method == "POST":
         today = dbmod.today_str()
         hr = request.form.get("resting_hr")
         sleep = request.form.get("sleep_hours")
         if hr:
-            conn.execute("INSERT INTO health_metrics (date, metric, value, unit, source) VALUES (?,?,?,?,?)",
-                         (today, "Resting Heart Rate (bpm)", float(hr), "bpm", "manual"))
+            conn.execute("INSERT INTO health_metrics (date, metric, value, unit, source, profile_id) "
+                         "VALUES (?,?,?,?,?,?)",
+                         (today, "Resting Heart Rate (bpm)", float(hr), "bpm", "manual", pid))
         if sleep:
-            conn.execute("INSERT INTO health_metrics (date, metric, value, unit, source) VALUES (?,?,?,?,?)",
-                         (today, "Sleep Hours", float(sleep), "hours", "manual"))
+            conn.execute("INSERT INTO health_metrics (date, metric, value, unit, source, profile_id) "
+                         "VALUES (?,?,?,?,?,?)",
+                         (today, "Sleep Hours", float(sleep), "hours", "manual", pid))
         conn.commit()
 
-    recent = health_import.recent_metrics(conn, days=30)
+    recent = health_import.recent_metrics(conn, pid, days=30)
     conn.close()
     return render_template("health.html", recent=recent)
 
@@ -405,7 +485,8 @@ def health_view():
 @app.route("/api/health/feedback")
 def api_health_feedback():
     conn = get_conn()
-    recent = health_import.recent_metrics(conn, days=7)
+    pid = current_profile_id()
+    recent = health_import.recent_metrics(conn, pid, days=7)
 
     def settings_getter():
         mode = dbmod.get_setting(conn, "ai_feedback_mode", "rule_based")
@@ -414,8 +495,10 @@ def api_health_feedback():
         return mode, key, model
 
     status_rows = conn.execute("""
-        SELECT reps_done, hold_done, target_low, target_high FROM session_sets ORDER BY id DESC LIMIT 6
-    """).fetchall()
+        SELECT ss.reps_done, ss.hold_done, ss.target_low, ss.target_high FROM session_sets ss
+        JOIN sessions s ON s.id = ss.session_id
+        WHERE s.profile_id = ? ORDER BY ss.id DESC LIMIT 6
+    """, (pid,)).fetchall()
     statuses = []
     for r in status_rows:
         v = r["hold_done"] if r["hold_done"] is not None else r["reps_done"]
@@ -430,14 +513,14 @@ def api_health_feedback():
 
 
 # ---------------------------------------------------------------------------
-# Settings
+# Settings (app-wide password/language shared; backup is per-active-profile)
 # ---------------------------------------------------------------------------
 @app.route("/settings/export")
 def settings_export():
     conn = get_conn()
-    data = backup_mod.export_backup(conn)
+    pid = current_profile_id()
+    data = backup_mod.export_backup(conn, pid)
     conn.close()
-    from flask import Response
     return Response(
         json.dumps(data, indent=2),
         mimetype="application/json",
@@ -448,13 +531,14 @@ def settings_export():
 @app.route("/settings/import", methods=["POST"])
 def settings_import():
     conn = get_conn()
+    pid = current_profile_id()
     file = request.files.get("backup_file")
     if not file:
         conn.close()
         return redirect(url_for("settings_view"))
     try:
         data = json.load(file.stream)
-        backup_mod.import_backup(conn, data)
+        backup_mod.import_backup(conn, pid, data)
     except Exception as e:
         conn.close()
         return render_template("settings.html", current=_current_settings(conn), import_error=str(e))

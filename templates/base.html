@@ -10,6 +10,7 @@
 <header class="topbar no-print">
   <span class="brand">Trainer</span>
   <span class="row" style="gap:10px">
+    {% if active_profile %}<a href="{{ url_for('profiles_view') }}" style="font-size:11px">{{ active_profile.name }} ▾</a>{% endif %}
     <span class="version">v{{ app_version }}</span>
     <a href="{{ url_for('profile_view') }}" style="font-size:11px">{{ t('title_profile') }}</a>
     <a href="{{ url_for('logout') }}" style="font-size:11px">{{ t('btn_logout') }}</a>

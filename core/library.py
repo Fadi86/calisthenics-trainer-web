@@ -47,6 +47,33 @@ def get_exercise_videos(conn, exercise_id):
     return [dict(r) for r in rows]
 
 
+SKILL_SUBCATS = {"front_lever", "back_lever", "planche", "muscle_up", "one_arm", "balance", "arm_balance"}
+
+CATEGORY_LABELS = {
+    "pull": "Pull", "push": "Push", "legs": "Legs", "core": "Core",
+    "handstand": "Handstand", "conditioning": "Conditioning",
+    "warmup": "Warm-up", "mobility": "Mobility",
+}
+
+
+def classify_role(exercise):
+    """Written text classification for the library badge - main / warm-up /
+    skill / accessory / conditioning / mobility, derived from the exercise's
+    existing category/subcategory/type rather than a new stored field."""
+    cat = exercise["category"]
+    if cat == "warmup":
+        return "warm-up", "role-warmup"
+    if cat == "conditioning":
+        return "conditioning", "role-conditioning"
+    if cat == "mobility":
+        return "mobility", "role-mobility"
+    if exercise["subcategory"] in SKILL_SUBCATS:
+        return "skill", "role-skill"
+    if exercise["type"] == "extra":
+        return "accessory", "role-extra"
+    return "main", "role-main"
+
+
 def get_rotation_siblings(conn, exercise_id):
     """Same rotation_group, i.e. valid lateral swaps at the same difficulty."""
     ex = get_exercise(conn, exercise_id)

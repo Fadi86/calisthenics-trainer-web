@@ -33,6 +33,10 @@ def check(label, condition):
         raise AssertionError(label)
 
 
+print("[0] Create and select a profile (now required before anything else)...")
+r = client.post("/profiles/create", data={"name": "Fadi"}, follow_redirects=True)
+check("profile created and redirected to dashboard", r.status_code == 200 and b"Exercises" in r.data)
+
 print("[1] Dashboard loads...")
 r = client.get("/")
 check("status 200", r.status_code == 200)
@@ -66,23 +70,23 @@ check("shows tier badges in schedule", b"T1" in r.data or b"T2" in r.data or b"T
 
 conn = dbmod.get_connection(TMP_DB)
 from core import scheduler
-plan = scheduler.get_schedule(conn, "My Plan")
+plan = scheduler.get_schedule(conn, 1, "My Plan")
 first_item = plan[0]["items"][0]
 r = client.post(f"/schedule/swap/{first_item['id']}", data={"new_exercise_id": "warmup_jumping_jacks_easy"},
                  follow_redirects=True)
 check("swap redirects OK", r.status_code == 200)
-plan_after = scheduler.get_schedule(conn, "My Plan")
+plan_after = scheduler.get_schedule(conn, 1, "My Plan")
 check("swap actually changed the exercise", plan_after[0]["items"][0]["exercise"]["id"] == "warmup_jumping_jacks_easy")
 
 before_count = len(plan_after[0]["items"])
 r = client.post(f"/schedule/remove/{first_item['id']}", follow_redirects=True)
-plan_after_remove = scheduler.get_schedule(conn, "My Plan")
+plan_after_remove = scheduler.get_schedule(conn, 1, "My Plan")
 check("remove actually removed an item", len(plan_after_remove[0]["items"]) == before_count - 1)
 
 day_id = plan_after_remove[0]["id"]
 r = client.post(f"/schedule/add/{day_id}", data={"exercise_id": "pull_strict_pullup", "role": "main"},
                  follow_redirects=True)
-plan_after_add = scheduler.get_schedule(conn, "My Plan")
+plan_after_add = scheduler.get_schedule(conn, 1, "My Plan")
 check("add actually added an item",
       any(it["exercise"]["id"] == "pull_strict_pullup" for it in plan_after_add[0]["items"]))
 
