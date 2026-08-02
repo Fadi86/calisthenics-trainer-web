@@ -34,7 +34,7 @@ check("still shows the initial button (no conversation started)", b"Get Instant 
 
 print("[2] Set an API key in Settings, then get a (mocked) recommendation...")
 client.post("/settings", data={
-    "interval": "60", "ai_mode": "claude_api", "ai_api_key": "fake-test-key",
+    "interval": "60", "ai_provider": "claude", "ai_api_key": "fake-test-key",
     "ai_model": "claude-haiku-4-5-20251001", "language": "en",
 })
 

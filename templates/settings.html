@@ -11,25 +11,38 @@
     <option value="ar" {{ 'selected' if current.language == 'ar' }}>العربية (menus only — exercise names stay English)</option>
   </select>
 
-  <label>AI feedback mode</label>
-  <select name="ai_mode">
-    <option value="rule_based" {{ 'selected' if current.ai_mode == 'rule_based' }}>rule_based</option>
-    <option value="claude_api" {{ 'selected' if current.ai_mode == 'claude_api' }}>claude_api</option>
+  <label>AI Provider (for Instant Trainer Recommendation on Progress)</label>
+  <select name="ai_provider" id="ai_provider" onchange="updateModelDefault()">
+    <option value="claude" {{ 'selected' if current.ai_provider == 'claude' }}>Claude (Anthropic) — paid, usage-billed</option>
+    <option value="gemini" {{ 'selected' if current.ai_provider == 'gemini' }}>Gemini (Google) — has a free tier, no card needed</option>
   </select>
 
-  <label>Claude API key (optional, your own)</label>
+  <label>API key (your own, for whichever provider you picked above)</label>
   <input type="password" name="ai_api_key" value="{{ current.ai_api_key }}">
 
   <label>Model</label>
-  <select name="ai_model">
-    <option value="claude-haiku-4-5-20251001" {{ 'selected' if current.ai_model == 'claude-haiku-4-5-20251001' }}>claude-haiku-4-5-20251001</option>
-    <option value="claude-sonnet-5" {{ 'selected' if current.ai_model == 'claude-sonnet-5' }}>claude-sonnet-5</option>
-    <option value="claude-opus-4-8" {{ 'selected' if current.ai_model == 'claude-opus-4-8' }}>claude-opus-4-8</option>
-  </select>
+  <input type="text" name="ai_model" id="ai_model" value="{{ current.ai_model }}">
+  <p class="muted" style="margin-top:2px">
+    Claude example: claude-haiku-4-5-20251001 &nbsp;·&nbsp; Gemini example: gemini-2.5-flash-lite
+  </p>
 
   <button type="submit">{{ t('btn_save') }}</button>
-  <p class="muted">claude_api mode sends a short summary of recent health/training numbers to Anthropic's API using the key above (billed to you). Nothing leaves the device in rule_based mode.</p>
+  <p class="muted">
+    One shared key covers all 5 profiles on this deployment (billed to whoever's key it is).
+    Get a free Gemini key at aistudio.google.com if you'd rather not pay for Claude.
+  </p>
 </form>
+
+<script>
+function updateModelDefault() {
+  const provider = document.getElementById("ai_provider").value;
+  const modelInput = document.getElementById("ai_model");
+  if (modelInput.value === "" || modelInput.dataset.autofilled === "1") {
+    modelInput.value = provider === "gemini" ? "gemini-2.5-flash-lite" : "claude-haiku-4-5-20251001";
+    modelInput.dataset.autofilled = "1";
+  }
+}
+</script>
 
 <div class="card">
   <strong>Change Password</strong>

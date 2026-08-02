@@ -171,7 +171,7 @@ MAX_PROFILES = 5
 DEFAULT_SETTINGS = {
     "reassessment_interval_days": "60",
     "days_per_week": "4",
-    "ai_feedback_mode": "rule_based",   # "rule_based" or "claude_api"
+    "ai_provider": "claude",   # "claude" or "gemini" - for Instant Trainer Recommendation
     "ai_api_key": "",
     "ai_model": "claude-haiku-4-5-20251001",
     "youtube_api_key": "",

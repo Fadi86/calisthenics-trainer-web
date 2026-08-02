@@ -4,6 +4,18 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.7.0 — Gemini as a free alternative to Claude
+
+Settings now has an "AI Provider" choice: Claude (paid, usage-billed) or
+**Gemini (Google) — which has a genuinely free tier, no credit card
+needed**. Get a free key at aistudio.google.com if you'd rather not pay
+for the Instant Trainer Recommendation feature. One shared key/provider
+setting covers all 5 profiles - nobody needs to set up their own.
+
+Removed the old, now-meaningless "AI feedback mode" (rule_based/claude_api)
+toggle left over from the removed Health page - it didn't do anything
+useful anymore once Health was replaced with Chat.
+
 ## v5.6.0 — Instant Trainer Recommendation (AI chat on Progress)
 
 New card at the bottom of the Progress page: "Get Instant Trainer

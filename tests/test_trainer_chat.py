@@ -38,7 +38,7 @@ check("mentions untested patterns honestly", "not tested yet" in context)
 
 print("[2] No API key configured -> clear error, no crash...")
 try:
-    trainer_chat.get_initial_recommendation(conn, pid, api_key="", model="claude-haiku-4-5-20251001")
+    trainer_chat.get_initial_recommendation(conn, pid, "claude", api_key="", model="claude-haiku-4-5-20251001")
     check("should have raised", False)
 except ValueError as e:
     check(f"clear error message about missing key: '{e}'", "API key" in str(e))
@@ -46,7 +46,7 @@ except ValueError as e:
 print("[3] Mocked Claude API call - initial recommendation + conversation storage...")
 with patch("core.trainer_chat._call_claude") as mock_call:
     mock_call.return_value = "You're strong on pull-ups but Back Lever is untouched - work on that next."
-    reply = trainer_chat.get_initial_recommendation(conn, pid, api_key="fake-key", model="claude-haiku-4-5-20251001")
+    reply = trainer_chat.get_initial_recommendation(conn, pid, "claude", api_key="fake-key", model="claude-haiku-4-5-20251001")
     check("returns the mocked reply", "Back Lever" in reply)
 
     history = trainer_chat.get_conversation(conn, pid)
@@ -59,7 +59,7 @@ with patch("core.trainer_chat._call_claude") as mock_call:
 print("[4] Follow-up question retains full context in the conversation sent to Claude...")
 with patch("core.trainer_chat._call_claude") as mock_call:
     mock_call.return_value = "You're stuck because Back Lever needs direct volume - it won't improve from pull-ups alone."
-    reply2 = trainer_chat.continue_conversation(conn, pid, "fake-key", "claude-haiku-4-5-20251001",
+    reply2 = trainer_chat.continue_conversation(conn, pid, "claude", "fake-key", "claude-haiku-4-5-20251001",
                                                   "Why am I not progressing on Back Lever?")
     check("returns the follow-up reply", "Back Lever needs direct volume" in reply2)
 
@@ -77,7 +77,7 @@ check("conversation is empty after clearing", len(trainer_chat.get_conversation(
 print("[6] Starting a new recommendation after clearing starts fresh (doesn't append to old)...")
 with patch("core.trainer_chat._call_claude") as mock_call:
     mock_call.return_value = "Fresh recommendation."
-    trainer_chat.get_initial_recommendation(conn, pid, "fake-key", "claude-haiku-4-5-20251001")
+    trainer_chat.get_initial_recommendation(conn, pid, "claude", "fake-key", "claude-haiku-4-5-20251001")
     check("fresh conversation has exactly 2 messages, not more", len(trainer_chat.get_conversation(conn, pid)) == 2)
 
 print("[7] Two profiles' AI conversations never mix...")

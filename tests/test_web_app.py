@@ -117,7 +117,7 @@ check("message appears on the page", b"Hello from the test suite" in r.data)
 
 print("[8] Settings page loads and saves...")
 r = client.post("/settings", data={
-    "interval": "45", "ai_mode": "rule_based", "ai_api_key": "", "ai_model": "claude-haiku-4-5-20251001",
+    "interval": "45", "ai_provider": "claude", "ai_api_key": "", "ai_model": "claude-haiku-4-5-20251001",
 }, follow_redirects=True)
 check("status 200", r.status_code == 200)
 saved = dbmod.get_setting(conn, "reassessment_interval_days")

@@ -276,10 +276,11 @@ def progress_view():
 def progress_ai_recommendation():
     conn = get_conn()
     pid = current_profile_id()
+    provider = dbmod.get_setting(conn, "ai_provider", "claude")
     api_key = dbmod.get_setting(conn, "ai_api_key", "")
     model = dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001")
     try:
-        trainer_chat.get_initial_recommendation(conn, pid, api_key, model)
+        trainer_chat.get_initial_recommendation(conn, pid, provider, api_key, model)
     except (ValueError, ConnectionError) as e:
         flash(str(e), "ai_error")
     conn.close()
@@ -290,6 +291,7 @@ def progress_ai_recommendation():
 def api_trainer_chat_send():
     conn = get_conn()
     pid = current_profile_id()
+    provider = dbmod.get_setting(conn, "ai_provider", "claude")
     api_key = dbmod.get_setting(conn, "ai_api_key", "")
     model = dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001")
     message = request.get_json(force=True).get("message", "").strip()
@@ -297,7 +299,7 @@ def api_trainer_chat_send():
         conn.close()
         return jsonify({"error": "Empty message"}), 400
     try:
-        reply = trainer_chat.continue_conversation(conn, pid, api_key, model, message)
+        reply = trainer_chat.continue_conversation(conn, pid, provider, api_key, model, message)
         conn.close()
         return jsonify({"reply": reply})
     except (ValueError, ConnectionError) as e:
@@ -711,7 +713,7 @@ def settings_import():
 def _current_settings(conn):
     return {
         "interval": dbmod.get_setting(conn, "reassessment_interval_days", "60"),
-        "ai_mode": dbmod.get_setting(conn, "ai_feedback_mode", "rule_based"),
+        "ai_provider": dbmod.get_setting(conn, "ai_provider", "claude"),
         "ai_api_key": dbmod.get_setting(conn, "ai_api_key", ""),
         "ai_model": dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001"),
         "language": dbmod.get_setting(conn, "language", "en"),
@@ -735,7 +737,7 @@ def settings_view():
                 dbmod.set_setting(conn, "app_password_hash", generate_password_hash(new_pw))
         else:
             dbmod.set_setting(conn, "reassessment_interval_days", request.form.get("interval", "60"))
-            dbmod.set_setting(conn, "ai_feedback_mode", request.form.get("ai_mode", "rule_based"))
+            dbmod.set_setting(conn, "ai_provider", request.form.get("ai_provider", "claude"))
             dbmod.set_setting(conn, "ai_api_key", request.form.get("ai_api_key", ""))
             dbmod.set_setting(conn, "ai_model", request.form.get("ai_model", "claude-haiku-4-5-20251001"))
             dbmod.set_setting(conn, "language", request.form.get("language", "en"))
