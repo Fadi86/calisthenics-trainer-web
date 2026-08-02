@@ -4,6 +4,24 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.4.0 — "Full Body" groups the non-muscle categories
+
+The category dropdown (1st classification) had Conditioning/Mobility/
+Warm-up sitting as peers next to real muscle groups (Pull/Push/Legs/Core/
+Handstand) - but they aren't muscles, which is exactly why the type badge
+(3rd classification) kept repeating the same word. Now the dropdown shows
+6 options: the 5 muscle groups, plus one "Full Body" that combines all
+three non-muscle categories.
+
+This is display-only - each exercise's real `category` field in the
+database is completely untouched (a conditioning exercise is still
+`category="conditioning"`, not overwritten to "full_body"), so the
+scheduler (which depends on those exact real category values to build
+e.g. the Handstand+Conditioning day) works exactly as before. Individual
+exercise rows still show their true, specific category badge (Conditioning/
+Mobility/Warm-up) even inside the Full Body view - only the top-level
+filter dropdown is grouped, nothing else.
+
 ## v5.3.1 — type filter fix
 
 The "type" dropdown in the Library only ever offered Main/Extra (the raw

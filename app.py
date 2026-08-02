@@ -306,12 +306,12 @@ def calendar_view():
 @app.route("/library")
 def library_view():
     conn = get_conn()
-    categories = ["all"] + library.categories(conn)
+    categories = ["all"] + library.filter_categories()
     category = request.args.get("category", "all")
     tier = request.args.get("tier", "all")
     type_ = request.args.get("type", "all")
 
-    exercises = library.list_exercises(
+    exercises = library.list_exercises_for_filter(
         conn,
         category=None if category == "all" else category,
         tier=None if tier == "all" else int(tier),
@@ -321,7 +321,7 @@ def library_view():
     exercises = library.filter_by_role(exercises, type_)
 
     related = []
-    if category != "all":
+    if category in library.MUSCLE_GROUP_CATEGORIES:
         related = library.get_related_prep_exercises(conn, category)
         if tier != "all":
             related = [e for e in related if e["tier"] == int(tier)]

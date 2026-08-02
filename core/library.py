@@ -52,7 +52,7 @@ SKILL_SUBCATS = {"front_lever", "back_lever", "planche", "muscle_up", "one_arm",
 CATEGORY_LABELS = {
     "pull": "Pull", "push": "Push", "legs": "Legs", "core": "Core",
     "handstand": "Handstand", "conditioning": "Conditioning",
-    "warmup": "Warm-up", "mobility": "Mobility",
+    "warmup": "Warm-up", "mobility": "Mobility", "full_body": "Full Body",
 }
 
 # Which muscle-group category each tagged muscle mainly belongs to - used
@@ -155,6 +155,36 @@ def get_chain(conn, exercise_id, _seen=None):
 def categories(conn):
     rows = conn.execute("SELECT DISTINCT category FROM exercises ORDER BY category").fetchall()
     return [r["category"] for r in rows]
+
+
+# For the Library's FIRST filter dropdown only. Conditioning/Mobility/
+# Warm-up aren't muscle groups, so grouping them under one "Full Body"
+# filter option avoids the exact confusion of having them sit as peers
+# next to Pull/Push/Legs/Core/Handstand. This is a display-only grouping -
+# the real `category` column on each row is untouched (still exactly
+# "conditioning"/"mobility"/"warmup"), so the scheduler (which filters by
+# those real category values for e.g. the Handstand+Conditioning day) is
+# completely unaffected. Row badges still show the true, specific category.
+MUSCLE_GROUP_CATEGORIES = ["pull", "push", "legs", "core", "handstand"]
+FULL_BODY_SOURCE_CATEGORIES = ["conditioning", "mobility", "warmup"]
+
+
+def filter_categories():
+    """The curated list for the Library's category dropdown."""
+    return MUSCLE_GROUP_CATEGORIES + ["full_body"]
+
+
+def list_exercises_for_filter(conn, category, tier=None):
+    """Like list_exercises, but understands the virtual 'full_body' filter
+    value (maps to the 3 real non-muscle categories) in addition to real
+    category values and None (no category filter at all)."""
+    if category == "full_body":
+        results = []
+        for real_cat in FULL_BODY_SOURCE_CATEGORIES:
+            results += list_exercises(conn, category=real_cat, tier=tier)
+        results.sort(key=lambda e: (e["category"], e["subcategory"] or "", e["tier"], e["name"]))
+        return results
+    return list_exercises(conn, category=category, tier=tier)
 
 
 def subcategories(conn, category):
