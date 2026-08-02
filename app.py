@@ -320,6 +320,16 @@ def library_view():
     for e in exercises:
         e["role_label"], e["role_class"] = library.classify_role(e)
 
+    related = []
+    if category != "all":
+        related = library.get_related_prep_exercises(conn, category)
+        if tier != "all":
+            related = [e for e in related if e["tier"] == int(tier)]
+        if type_ != "all":
+            related = [e for e in related if e["type"] == type_]
+        for e in related:
+            e["role_label"], e["role_class"] = library.classify_role(e)
+
     detail_id = request.args.get("exercise")
     detail = None
     watch_url = None
@@ -332,7 +342,7 @@ def library_view():
     conn.close()
     return render_template("library.html", categories=categories, category=category, tier=tier,
                             type_=type_, exercises=exercises, detail=detail, watch_url=watch_url,
-                            category_labels=library.CATEGORY_LABELS)
+                            category_labels=library.CATEGORY_LABELS, related=related)
 
 
 # ---------------------------------------------------------------------------

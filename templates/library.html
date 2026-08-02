@@ -52,4 +52,23 @@
     </div>
   {% endfor %}
 </div>
+
+{% if related %}
+<div class="card">
+  <p class="muted" style="margin-top:0">
+    <strong>Related warm-up &amp; mobility</strong> — not native to {{ category_labels.get(category, category) }},
+    but tagged to muscles this group uses.
+  </p>
+  {% for e in related %}
+    <div class="exercise-row-v2">
+      <a class="ex-name-v2" href="{{ url_for('library_view', category=category, tier=tier, type=type_, exercise=e.id) }}">{{ e.name }}</a>
+      <div class="badge-cluster">
+        <span class="category-badge">{{ category_labels.get(e.category, e.category) }}</span>
+        <span class="tier-badge tier-{{ e.tier }}">T{{ e.tier }}</span>
+        <span class="role-tag {{ e.role_class }}">{{ e.role_label }}</span>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% endblock %}

@@ -4,6 +4,16 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.3.0 — muscle-linked warm-up/mobility in the Library
+
+Selecting a muscle-group category (Legs, Pull, Push, Core) now also shows
+a "Related warm-up & mobility" section below the main list - exercises
+whose own category is Warm-up/Mobility/Conditioning, but whose tagged
+muscles match that group. Found via muscle tags, not a rigid category
+reassignment, so an item can legitimately appear under more than one group
+(shoulder mobility shows under both Push and Pull, for instance) instead
+of being forced into a single "correct" bucket.
+
 ## v5.2.0 — automatic backups, group chat, Health removed
 
 - **Health tab removed, replaced with Chat** - a simple shared group chat

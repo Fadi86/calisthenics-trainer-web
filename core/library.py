@@ -55,6 +55,43 @@ CATEGORY_LABELS = {
     "warmup": "Warm-up", "mobility": "Mobility",
 }
 
+# Which muscle-group category each tagged muscle mainly belongs to - used
+# to surface relevant warm-up/mobility items when browsing a muscle group,
+# even though their own category is "warmup"/"mobility" rather than
+# "pull"/"push"/etc. A muscle can map to more than one group (e.g.
+# shoulders serve both push and pull), so an item can legitimately show
+# up under more than one filter - that's accurate, not a bug.
+MUSCLE_TO_CATEGORY = {
+    "lats": ["pull"], "upper_back": ["pull"], "rear_delts": ["pull"], "biceps": ["pull"],
+    "forearms": ["pull"], "traps": ["pull"],
+    "chest": ["push"], "front_delts": ["push"], "side_delts": ["push"], "triceps": ["push"],
+    "quads": ["legs"], "hamstrings": ["legs"], "glutes": ["legs"], "calves": ["legs"],
+    "adductors": ["legs"], "hip_flexors": ["legs"],
+    "abs": ["core"], "obliques": ["core"], "lower_back": ["core"],
+}
+RELATED_SOURCE_CATEGORIES = {"warmup", "mobility", "conditioning"}
+
+
+def get_related_prep_exercises(conn, category):
+    """Warm-up/mobility/conditioning items relevant to a muscle-group
+    category, found via their tagged muscles rather than their own
+    category field - so picking 'Legs' also surfaces leg-relevant warm-up
+    and mobility work, not just the main leg lifts."""
+    if category not in ("pull", "push", "legs", "core", "handstand"):
+        return []
+    all_ex = list_exercises(conn)
+    related = []
+    for e in all_ex:
+        if e["category"] not in RELATED_SOURCE_CATEGORIES:
+            continue
+        muscles = set(e.get("primary_muscles", []) + e.get("secondary_muscles", []))
+        target_categories = set()
+        for m in muscles:
+            target_categories.update(MUSCLE_TO_CATEGORY.get(m, []))
+        if category in target_categories:
+            related.append(e)
+    return related
+
 
 def classify_role(exercise):
     """Written text classification for the library's third badge - one of:
