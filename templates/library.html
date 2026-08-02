@@ -19,15 +19,13 @@
 
 {% if detail %}
 <div class="card">
-  <div class="row" style="justify-content: space-between">
-    <strong>{{ detail.name }}</strong>
-    <span class="tier-badge tier-{{ detail.tier }}">T{{ detail.tier }}</span>
-  </div>
-  <div class="row" style="margin-top:4px">
+  <strong>{{ detail.name }}</strong>
+  <div class="badge-cluster" style="margin-top:6px">
     <span class="category-badge">{{ category_labels.get(detail.category, detail.category) }}</span>
+    <span class="tier-badge tier-{{ detail.tier }}">T{{ detail.tier }}</span>
     <span class="role-tag {{ detail.role_class }}">{{ detail.role_label }}</span>
   </div>
-  <p class="muted">Equipment: {{ detail.equipment | join(', ') }}</p>
+  <p class="muted" style="margin-top:8px">Equipment: {{ detail.equipment | join(', ') }}</p>
   {% if detail.primary_muscles %}<p class="muted">Primary: {{ detail.primary_muscles | join(', ') }}</p>{% endif %}
   {% if detail.secondary_muscles %}<p class="muted">Secondary: {{ detail.secondary_muscles | join(', ') }}</p>{% endif %}
   {% if detail.cues %}
@@ -44,11 +42,13 @@
 
 <div class="card">
   {% for e in exercises %}
-    <div class="exercise-row">
-      <span class="category-badge">{{ category_labels.get(e.category, e.category) }}</span>
-      <span class="tier-badge tier-{{ e.tier }}">T{{ e.tier }}</span>
-      <a class="ex-name" href="{{ url_for('library_view', category=category, tier=tier, type=type_, exercise=e.id) }}">{{ e.name }}</a>
-      <span class="role-tag {{ e.role_class }}">{{ e.role_label }}</span>
+    <div class="exercise-row-v2">
+      <a class="ex-name-v2" href="{{ url_for('library_view', category=category, tier=tier, type=type_, exercise=e.id) }}">{{ e.name }}</a>
+      <div class="badge-cluster">
+        <span class="category-badge">{{ category_labels.get(e.category, e.category) }}</span>
+        <span class="tier-badge tier-{{ e.tier }}">T{{ e.tier }}</span>
+        <span class="role-tag {{ e.role_class }}">{{ e.role_label }}</span>
+      </div>
     </div>
   {% endfor %}
 </div>

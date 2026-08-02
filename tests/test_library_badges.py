@@ -30,11 +30,11 @@ conn = dbmod.get_connection(TMP_DB)
 
 cases = [
     ("pull_strict_pullup", "main"),          # category=pull, type=main, not a skill subcat
-    ("pull_fl_tuck", "skill"),                # subcategory=front_lever
-    ("push_planche_tuck", "skill"),           # subcategory=planche
-    ("pull_muscleup_strict_bar", "skill"),    # subcategory=muscle_up
-    ("hs_freestanding_hold", "skill"),        # category=handstand, subcategory=balance
-    ("warmup_march_in_place", "warm-up"),     # category=warmup
+    ("pull_fl_tuck", "skills"),               # subcategory=front_lever
+    ("push_planche_tuck", "skills"),          # subcategory=planche
+    ("pull_muscleup_strict_bar", "skills"),   # subcategory=muscle_up
+    ("hs_freestanding_hold", "skills"),       # category=handstand, subcategory=balance
+    ("warmup_march_in_place", "extra"),       # category=warmup -> "extra" per the requested vocabulary
     ("mob_hip_pancake", "mobility"),          # category=mobility
     ("cond_burpee", "conditioning"),          # category=conditioning
     ("pull_band_pullapart", "accessory"),     # category=pull, type=extra, not a skill subcat
@@ -50,13 +50,13 @@ check("status 200", r.status_code == 200)
 html = r.data.decode("utf-8")
 check("no emoji characters in the page", not any(c in html for c in "💪🔼🦵🎯🤸🏃🔥🧘"))
 check("shows written category label 'Pull'", "Pull" in html)
-check("shows written role label (main/skill/accessory)",
-      any(label in html for label in ["main", "skill", "accessory"]))
+check("shows written role label (main/skills/accessory)",
+      any(label in html for label in ["main", "skills", "accessory"]))
 
 print("[3] Library detail view shows category + role badges as text...")
 r = client.get("/library?category=pull&exercise=pull_fl_tuck")
 detail_html = r.data.decode("utf-8")
-check("detail shows 'skill' label for front lever", "skill" in detail_html)
+check("detail shows 'skills' label for front lever", "skills" in detail_html)
 check("detail shows 'Pull' category label", "Pull" in detail_html)
 check("no emoji in detail view", not any(c in detail_html for c in "💪🔼🦵🎯🤸🏃🔥🧘"))
 

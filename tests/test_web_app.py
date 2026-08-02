@@ -110,11 +110,10 @@ check("log_set returns feedback message", r.status_code == 200 and "above_target
 r = client.post("/api/train/complete")
 check("complete returns ok", r.status_code == 200 and r.get_json()["ok"] is True)
 
-print("[7] Health page loads, saves metrics, gets feedback...")
-r = client.post("/health", data={"resting_hr": "62", "sleep_hours": "7.5"}, follow_redirects=True)
+print("[7] Chat page loads, can send and see a message...")
+r = client.post("/chat", data={"message": "Hello from the test suite"}, follow_redirects=True)
 check("status 200", r.status_code == 200)
-r = client.get("/api/health/feedback")
-check("feedback API returns messages", r.status_code == 200 and len(r.get_json()["messages"]) > 0)
+check("message appears on the page", b"Hello from the test suite" in r.data)
 
 print("[8] Settings page loads and saves...")
 r = client.post("/settings", data={

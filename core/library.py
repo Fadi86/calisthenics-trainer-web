@@ -57,20 +57,23 @@ CATEGORY_LABELS = {
 
 
 def classify_role(exercise):
-    """Written text classification for the library badge - main / warm-up /
-    skill / accessory / conditioning / mobility, derived from the exercise's
-    existing category/subcategory/type rather than a new stored field."""
+    """Written text classification for the library's third badge - one of:
+    main / skills / mobility / conditioning / extra / accessory.
+    'extra' = warm-up prep work; 'accessory' = genuine assistance/secondary
+    strength work (type=extra but not warm-up/mobility/conditioning/a skill).
+    Kept distinct from the category badge (first badge) so the two don't
+    just repeat the same word for warm-up/mobility/conditioning items."""
     cat = exercise["category"]
     if cat == "warmup":
-        return "warm-up", "role-warmup"
+        return "extra", "role-extra"
     if cat == "conditioning":
         return "conditioning", "role-conditioning"
     if cat == "mobility":
         return "mobility", "role-mobility"
     if exercise["subcategory"] in SKILL_SUBCATS:
-        return "skill", "role-skill"
+        return "skills", "role-skill"
     if exercise["type"] == "extra":
-        return "accessory", "role-extra"
+        return "accessory", "role-accessory"
     return "main", "role-main"
 
 

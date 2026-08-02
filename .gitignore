@@ -1,0 +1,8 @@
+# Personal data - never commit these. The live database and backups live
+# only on the server's filesystem, never in git, so a `git pull` deploy
+# can never touch or overwrite them.
+*.db
+data/backups/
+__pycache__/
+*.pyc
+.DS_Store

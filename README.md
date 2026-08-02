@@ -4,6 +4,49 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.2.0 — automatic backups, group chat, Health removed
+
+- **Health tab removed, replaced with Chat** - a simple shared group chat
+  visible to all 5 profiles (new messages appear automatically every few
+  seconds, no manual refresh needed).
+- **Automatic safety-net backup** - roughly once a day, a full snapshot of
+  every profile's data plus the chat log gets written to a plain JSON file
+  on the server (`data/backups/`), completely separate from both the live
+  database and the git repo. A `git pull` deployment can never touch it,
+  and it survives even if the live database were somehow damaged. Keeps
+  the last 14 days automatically. You can also download it manually any
+  time from Settings ("Download ALL Profiles Backup").
+- **Added `.gitignore`** - the database file and the backups folder are
+  now explicitly excluded from git, so personal data can never accidentally
+  end up in a commit.
+
+### Updating your already-deployed PythonAnywhere site
+
+```
+cd ~/calisthenics-trainer-web
+git pull
+```
+Then go to the Web tab and click Reload. Existing data is untouched -
+this only adds a new `chat_messages` table and a `data/backups/` folder,
+nothing is deleted or restructured.
+
+## v5.1.0 — mobile clarity pass
+
+- **Bottom nav redesigned**: was a single cramped row (9 items squeezed
+  into ~36-50px each, only 32px tall). Now a 3x3 grid with a small icon
+  above each label - every item measures 125x52px, well above the 44px
+  minimum mobile touch target, with zero horizontal overflow.
+- **Library classification fixed**: three distinct badges - category
+  (Pull/Push/Legs/Core/Handstand/Conditioning/Warm-up/Mobility), tier
+  (unchanged), and type (main/skills/mobility/conditioning/extra/accessory)
+  - now always render grouped together on their own line under the
+  exercise name, instead of the type badge sometimes wrapping onto a
+  separate line disconnected from the other two (measured and confirmed
+  with real browser layout, not just code review).
+- **Mobility library rounded out**: added knee and ankle-plantarflexion
+  coverage, closing the last body-region gaps (now 28 mobility exercises
+  across 13 regions).
+
 ## v5.0.0 — multi-profile support (up to 5 people)
 
 One app password still gates the whole site (unchanged). After logging in,

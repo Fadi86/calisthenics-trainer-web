@@ -22,15 +22,42 @@
 </main>
 
 <nav class="bottomnav no-print">
-  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">{{ t('nav_home') }}</a>
-  <a href="{{ url_for('assessment') }}" class="{{ 'active' if request.path == '/assessment' }}">{{ t('nav_assess') }}</a>
-  <a href="{{ url_for('progress_view') }}" class="{{ 'active' if request.path == '/progress' }}">{{ t('nav_progress') }}</a>
-  <a href="{{ url_for('library_view') }}" class="{{ 'active' if request.path == '/library' }}">{{ t('nav_library') }}</a>
-  <a href="{{ url_for('schedule_view') }}" class="{{ 'active' if request.path == '/schedule' }}">{{ t('nav_schedule') }}</a>
-  <a href="{{ url_for('calendar_view') }}" class="{{ 'active' if request.path == '/calendar' }}">{{ t('nav_calendar') }}</a>
-  <a href="{{ url_for('train_view') }}" class="{{ 'active' if request.path == '/train' }}">{{ t('nav_train') }}</a>
-  <a href="{{ url_for('health_view') }}" class="{{ 'active' if request.path == '/health' }}">{{ t('nav_health') }}</a>
-  <a href="{{ url_for('settings_view') }}" class="{{ 'active' if request.path == '/settings' }}">{{ t('nav_settings') }}</a>
+  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11"/><path d="M6 10 V20 H18 V10"/></svg>
+    <span>{{ t('nav_home') }}</span>
+  </a>
+  <a href="{{ url_for('assessment') }}" class="{{ 'active' if request.path == '/assessment' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><polyline points="8,12 11,15 16,9"/></svg>
+    <span>{{ t('nav_assess') }}</span>
+  </a>
+  <a href="{{ url_for('progress_view') }}" class="{{ 'active' if request.path == '/progress' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="14"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="19" y1="20" x2="19" y2="4"/></svg>
+    <span>{{ t('nav_progress') }}</span>
+  </a>
+  <a href="{{ url_for('library_view') }}" class="{{ 'active' if request.path == '/library' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5 C4 5 8 4 12 5 C16 4 20 5 20 5 V19 C20 19 16 18 12 19 C8 18 4 19 4 19 Z"/><line x1="12" y1="5" x2="12" y2="19"/></svg>
+    <span>{{ t('nav_library') }}</span>
+  </a>
+  <a href="{{ url_for('schedule_view') }}" class="{{ 'active' if request.path == '/schedule' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+    <span>{{ t('nav_schedule') }}</span>
+  </a>
+  <a href="{{ url_for('calendar_view') }}" class="{{ 'active' if request.path == '/calendar' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+    <span>{{ t('nav_calendar') }}</span>
+  </a>
+  <a href="{{ url_for('train_view') }}" class="{{ 'active' if request.path == '/train' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="12" x2="17" y2="12"/><rect x="3" y="9" width="4" height="6" rx="1"/><rect x="17" y="9" width="4" height="6" rx="1"/></svg>
+    <span>{{ t('nav_train') }}</span>
+  </a>
+  <a href="{{ url_for('chat_view') }}" class="{{ 'active' if request.path == '/chat' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5 H20 V16 H9 L5 19 V16 H4 Z"/></svg>
+    <span>{{ t('nav_chat') }}</span>
+  </a>
+  <a href="{{ url_for('settings_view') }}" class="{{ 'active' if request.path == '/settings' }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="14" x2="20" y2="14"/><circle cx="15" cy="14" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="19" x2="20" y2="19"/><circle cx="7" cy="19" r="2" fill="currentColor" stroke="none"/></svg>
+    <span>{{ t('nav_settings') }}</span>
+  </a>
 </nav>
 {% block scripts %}{% endblock %}
 </body>

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t('title_chat') }}</h1>
+<p class="muted">Shared between everyone using this app - all 5 profiles see the same messages.</p>
+
+<div class="card" id="chat-box" style="max-height: 55vh; overflow-y: auto; display:flex; flex-direction:column; gap:8px;">
+  {% for m in messages %}
+    <div class="chat-msg {{ 'chat-msg-me' if m.profile_id == my_profile_id else '' }}" data-id="{{ m.id }}">
+      <div class="chat-msg-meta">{{ m.sender_name or 'Someone' }} · {{ m.created_at[11:16] if m.created_at|length > 10 else m.created_at }}</div>
+      <div class="chat-msg-bubble">{{ m.message }}</div>
+    </div>
+  {% else %}
+    <p class="muted">No messages yet — say something.</p>
+  {% endfor %}
+</div>
+
+<form method="post" action="{{ url_for('chat_view') }}" class="row" style="margin-top:10px" id="chat-form">
+  <input type="text" name="message" id="chat-input" placeholder="Message..." style="flex:1" autocomplete="off">
+  <button type="submit">Send</button>
+</form>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}" data-my-profile-id="{{ my_profile_id }}"></script>
+{% endblock %}

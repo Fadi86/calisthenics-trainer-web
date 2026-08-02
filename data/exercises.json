@@ -3834,7 +3834,7 @@
     "regression_of": [],
     "progression_to": [],
     "metric": {
-      "type": "distance"
+      "type": "reps"
     },
     "is_assessment": false,
     "type": "extra",
@@ -5320,7 +5320,7 @@
     ],
     "progression_to": [],
     "metric": {
-      "type": "distance"
+      "type": "reps"
     },
     "is_assessment": false,
     "type": "main",
@@ -5677,7 +5677,7 @@
     "regression_of": [],
     "progression_to": [],
     "metric": {
-      "type": "distance"
+      "type": "reps"
     },
     "is_assessment": false,
     "type": "extra",
@@ -6521,7 +6521,7 @@
     "name": "Farmer's Carry",
     "aliases": [],
     "category": "pull",
-    "subcategory": "hang",
+    "subcategory": "grip",
     "tier": 2,
     "equipment": [
       "weight"
@@ -6530,12 +6530,12 @@
     "regression_of": [],
     "progression_to": [],
     "metric": {
-      "type": "distance"
+      "type": "hold_seconds"
     },
     "is_assessment": false,
     "type": "extra",
     "modality": "bodyweight",
-    "rotation_group": "pull_hang_t2",
+    "rotation_group": "pull_grip_t2",
     "mobility_required": [],
     "cues": [
       "Shoulders packed down, walk tall"
@@ -6868,7 +6868,7 @@
     ],
     "progression_to": [],
     "metric": {
-      "type": "distance"
+      "type": "reps"
     },
     "is_assessment": false,
     "type": "main",
@@ -7421,7 +7421,7 @@
     "regression_of": [],
     "progression_to": [],
     "metric": {
-      "type": "distance"
+      "type": "reps"
     },
     "is_assessment": false,
     "type": "extra",
@@ -9314,6 +9314,505 @@
     "notes": null,
     "primary_muscles": [
       "hamstrings"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "pull_towel_hang",
+    "name": "Towel Dead Hang",
+    "aliases": [],
+    "category": "pull",
+    "subcategory": "grip",
+    "tier": 2,
+    "equipment": [
+      "bar"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "pull_grip_t2",
+    "mobility_required": [],
+    "cues": [
+      "Thick, unstable grip on a towel draped over the bar",
+      "Shoulders packed, don't just dead-hang limp"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "forearms"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "pull_fingertip_hang",
+    "name": "Fingertip Dead Hang",
+    "aliases": [],
+    "category": "pull",
+    "subcategory": "grip",
+    "tier": 4,
+    "equipment": [
+      "bar"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "pull_grip_t4",
+    "mobility_required": [],
+    "cues": [
+      "Only fingers on the bar/edge, no full palm",
+      "Build up slowly - this stresses tendons, not just muscle"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "forearms"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "pull_plate_pinch",
+    "name": "Plate Pinch Hold",
+    "aliases": [],
+    "category": "pull",
+    "subcategory": "grip",
+    "tier": 3,
+    "equipment": [
+      "weight"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "pull_grip_t3",
+    "mobility_required": [],
+    "cues": [
+      "Pinch two plates smooth-side-out between fingers and thumb",
+      "Stand tall, don't let the plates rotate"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "forearms"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "pull_towel_pullup",
+    "name": "Towel Pull-up",
+    "aliases": [],
+    "category": "pull",
+    "subcategory": "grip",
+    "tier": 4,
+    "equipment": [
+      "bar"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "reps"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "pull_grip_t4",
+    "mobility_required": [],
+    "cues": [
+      "Same thick unstable grip as the towel hang, now add the pull",
+      "Control the descent, don't just drop"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "forearms",
+      "lats",
+      "biceps"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "pull_wrist_roller",
+    "name": "Wrist Roller",
+    "aliases": [],
+    "category": "pull",
+    "subcategory": "grip",
+    "tier": 2,
+    "equipment": [
+      "weight"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "reps"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "pull_grip_t2",
+    "mobility_required": [],
+    "cues": [
+      "Roll continuously, don't let the weight drop and unwind",
+      "Do it both directions (roll up and roll down)"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "forearms"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_neck_lateral_flexion",
+    "name": "Neck Lateral Flexion Stretch",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "neck",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_neck_t1",
+    "mobility_required": [],
+    "cues": [
+      "Ear toward shoulder, don't shrug the shoulder up to meet it",
+      "Gentle overpressure with the hand only"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "traps"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_neck_rotation",
+    "name": "Neck Rotation Stretch",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "neck",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_neck_t1",
+    "mobility_required": [],
+    "cues": [
+      "Turn the chin toward the shoulder slowly",
+      "Stop at the first resistance, don't force it"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "traps"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_pec_doorway_stretch",
+    "name": "Doorway Pec Stretch",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "chest",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_chest_t1",
+    "mobility_required": [],
+    "cues": [
+      "Forearm on the frame, step through gently",
+      "Lower arm position stretches lower pec, higher stretches upper"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_lumbar_rotation",
+    "name": "Supine Lumbar Rotation (Windshield Wipers)",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "lumbar",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_lumbar_t1",
+    "mobility_required": [],
+    "cues": [
+      "Knees together, let them fall side to side",
+      "Keep both shoulders flat on the floor"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "obliques",
+      "lower_back"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_cobra_stretch",
+    "name": "Cobra Stretch (Spinal Extension)",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "lumbar",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_lumbar_t1",
+    "mobility_required": [],
+    "cues": [
+      "Press up through the hands, keep hips on the floor",
+      "Relax the glutes, this is a passive extension"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "lower_back"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_standing_quad_stretch",
+    "name": "Standing Quad Stretch",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "quad",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_quad_t1",
+    "mobility_required": [],
+    "cues": [
+      "Pull heel toward glute, knees stay together",
+      "Stand tall, don't arch the lower back to compensate"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "quads"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_lat_stretch_hang",
+    "name": "Lat Stretch (Hanging Side Reach)",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "lat",
+    "tier": 2,
+    "equipment": [
+      "bar"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_lat_t2",
+    "mobility_required": [],
+    "cues": [
+      "Hang from one arm, let the hip sway away from that side",
+      "Keep the shoulder packed, not jammed into the ear"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "lats"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_pigeon_pose",
+    "name": "Pigeon Pose (Hip External Rotator)",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "hip",
+    "tier": 2,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_hip_t2",
+    "mobility_required": [],
+    "cues": [
+      "Front shin angled, back leg extended straight behind",
+      "Square the hips forward as much as comfortable"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "glutes"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_knee_cars",
+    "name": "Knee CARs (Controlled Articular Rotations)",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "knee",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "reps"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_knee_t1",
+    "mobility_required": [],
+    "cues": [
+      "Slow controlled circles",
+      "Keep the movement isolated to the knee"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "quads",
+      "hamstrings"
+    ],
+    "secondary_muscles": []
+  },
+  {
+    "id": "mob_ankle_plantarflexion",
+    "name": "Ankle Plantarflexion Stretch (Toe Point)",
+    "aliases": [],
+    "category": "mobility",
+    "subcategory": "ankle",
+    "tier": 1,
+    "equipment": [
+      "none"
+    ],
+    "prerequisites": [],
+    "regression_of": [],
+    "progression_to": [],
+    "metric": {
+      "type": "hold_seconds"
+    },
+    "is_assessment": false,
+    "type": "extra",
+    "modality": "bodyweight",
+    "rotation_group": "mobility_ankle_t1",
+    "mobility_required": [],
+    "cues": [
+      "Point the toes and hold",
+      "Add gentle overpressure with the hand"
+    ],
+    "common_faults": [],
+    "video_ref": null,
+    "notes": null,
+    "primary_muscles": [
+      "calves"
     ],
     "secondary_muscles": []
   }

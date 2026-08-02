@@ -46,12 +46,20 @@
 
 <div class="card">
   <strong>Backup (Google Drive alternative)</strong>
-  <p class="muted">Includes your profile, assessments, tiers, sessions, and health history — upload to Drive yourself, and load it back here any time.</p>
+  <p class="muted">This profile only — includes your assessments, tiers, sessions, and history. Upload to Drive yourself, load it back here any time.</p>
   <a href="{{ url_for('settings_export') }}" class="btn secondary">{{ t('btn_download_backup') }}</a>
   <form method="post" action="{{ url_for('settings_import') }}" enctype="multipart/form-data" style="margin-top:10px">
     <input type="file" name="backup_file" accept="application/json">
     <button type="submit" class="secondary">{{ t('btn_load_backup') }}</button>
   </form>
   {% if import_error %}<p style="color:#e08a4e">{{ import_error }}</p>{% endif %}
+
+  <p class="muted" style="margin-top:14px">
+    <strong>Automatic safety net:</strong> everyone's data (all 5 profiles + chat) is also
+    auto-saved to a plain file on the server roughly once a day - completely separate from
+    the live database, and never touched by a code update or deployment. You can also grab
+    a copy of that same file manually any time:
+  </p>
+  <a href="{{ url_for('settings_export_all') }}" class="btn secondary">Download ALL Profiles Backup</a>
 </div>
 {% endblock %}

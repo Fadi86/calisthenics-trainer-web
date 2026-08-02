@@ -12,6 +12,7 @@ TRANSLATIONS = {
     "nav_calendar": {"en": "Calendar", "ar": "التقويم"},
     "nav_train": {"en": "Train", "ar": "التدريب"},
     "nav_health": {"en": "Health", "ar": "الصحة"},
+    "nav_chat": {"en": "Chat", "ar": "الدردشة"},
     "nav_settings": {"en": "Settings", "ar": "الإعدادات"},
 
     "title_dashboard": {"en": "Dashboard", "ar": "لوحة التحكم"},
@@ -22,6 +23,7 @@ TRANSLATIONS = {
     "title_calendar": {"en": "Calendar", "ar": "التقويم"},
     "title_train": {"en": "Train", "ar": "التدريب"},
     "title_health": {"en": "Health Data", "ar": "البيانات الصحية"},
+    "title_chat": {"en": "Chat", "ar": "الدردشة"},
     "title_settings": {"en": "Settings", "ar": "الإعدادات"},
     "title_profile": {"en": "Profile", "ar": "الملف الشخصي"},
     "title_login": {"en": "Login", "ar": "تسجيل الدخول"},

@@ -25,8 +25,7 @@ from core import library
 from core import assessment as assess_mod
 from core import scheduler
 from core import progression
-from core import health_import
-from core import ai_feedback
+from core import chat as chat_mod
 from core import reminders
 from core import video_fetch
 from core import backup as backup_mod
@@ -61,9 +60,14 @@ def require_login_and_profile():
         return
     conn = get_conn()
     password_hash = dbmod.get_setting(conn, "app_password_hash", "")
-    conn.close()
     if password_hash and not flask_session.get("authenticated"):
+        conn.close()
         return redirect(url_for("login"))
+    try:
+        backup_mod.maybe_run_auto_backup(conn)
+    except Exception:
+        pass  # never let a backup hiccup break the actual request
+    conn.close()
     if request.endpoint in ("profiles_view", "profile_create", "profile_select", "profile_delete"):
         return
     if not current_profile_id():
@@ -457,59 +461,38 @@ def api_train_log_set():
 
 
 # ---------------------------------------------------------------------------
-# Health
+# Chat (shared between all profiles on this deployment - intentionally
+# NOT profile-scoped, since the point is for everyone to see each other)
 # ---------------------------------------------------------------------------
-@app.route("/health", methods=["GET", "POST"])
-def health_view():
+@app.route("/chat", methods=["GET", "POST"])
+def chat_view():
     conn = get_conn()
     pid = current_profile_id()
     if request.method == "POST":
-        today = dbmod.today_str()
-        hr = request.form.get("resting_hr")
-        sleep = request.form.get("sleep_hours")
-        if hr:
-            conn.execute("INSERT INTO health_metrics (date, metric, value, unit, source, profile_id) "
-                         "VALUES (?,?,?,?,?,?)",
-                         (today, "Resting Heart Rate (bpm)", float(hr), "bpm", "manual", pid))
-        if sleep:
-            conn.execute("INSERT INTO health_metrics (date, metric, value, unit, source, profile_id) "
-                         "VALUES (?,?,?,?,?,?)",
-                         (today, "Sleep Hours", float(sleep), "hours", "manual", pid))
-        conn.commit()
-
-    recent = health_import.recent_metrics(conn, pid, days=30)
+        message = request.form.get("message", "")
+        chat_mod.send_message(conn, pid, message)
+    messages = chat_mod.get_messages(conn)
     conn.close()
-    return render_template("health.html", recent=recent)
+    return render_template("chat.html", messages=messages, my_profile_id=pid)
 
 
-@app.route("/api/health/feedback")
-def api_health_feedback():
+@app.route("/api/chat/messages")
+def api_chat_messages():
+    conn = get_conn()
+    since_id = request.args.get("since", 0, type=int)
+    messages = chat_mod.get_messages_since(conn, since_id)
+    conn.close()
+    return jsonify(messages)
+
+
+@app.route("/api/chat/send", methods=["POST"])
+def api_chat_send():
     conn = get_conn()
     pid = current_profile_id()
-    recent = health_import.recent_metrics(conn, pid, days=7)
-
-    def settings_getter():
-        mode = dbmod.get_setting(conn, "ai_feedback_mode", "rule_based")
-        key = dbmod.get_setting(conn, "ai_api_key", "")
-        model = dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001")
-        return mode, key, model
-
-    status_rows = conn.execute("""
-        SELECT ss.reps_done, ss.hold_done, ss.target_low, ss.target_high FROM session_sets ss
-        JOIN sessions s ON s.id = ss.session_id
-        WHERE s.profile_id = ? ORDER BY ss.id DESC LIMIT 6
-    """, (pid,)).fetchall()
-    statuses = []
-    for r in status_rows:
-        v = r["hold_done"] if r["hold_done"] is not None else r["reps_done"]
-        if v is None:
-            continue
-        statuses.append("above_target" if v >= r["target_high"] else
-                        "below_target" if v < r["target_low"] else "in_range")
-
-    result = ai_feedback.get_feedback(settings_getter, recent, statuses)
+    data = request.get_json(force=True)
+    chat_mod.send_message(conn, pid, data.get("message", ""))
     conn.close()
-    return jsonify(result)
+    return jsonify({"ok": True})
 
 
 # ---------------------------------------------------------------------------
@@ -525,6 +508,20 @@ def settings_export():
         json.dumps(data, indent=2),
         mimetype="application/json",
         headers={"Content-Disposition": f"attachment; filename=trainer-backup-{dbmod.today_str()}.json"},
+    )
+
+
+@app.route("/settings/export_all")
+def settings_export_all():
+    """Downloads everyone's data at once, plus the chat log - the same
+    content as the automatic safety-net file, on demand."""
+    conn = get_conn()
+    data = backup_mod.export_all_profiles(conn)
+    conn.close()
+    return Response(
+        json.dumps(data, indent=2),
+        mimetype="application/json",
+        headers={"Content-Disposition": f"attachment; filename=trainer-ALL-PROFILES-backup-{dbmod.today_str()}.json"},
     )
 
 

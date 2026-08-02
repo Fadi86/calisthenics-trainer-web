@@ -139,6 +139,13 @@ CREATE TABLE IF NOT EXISTS exercise_videos (
     FOREIGN KEY (exercise_id) REFERENCES exercises(id)
 );
 
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id INTEGER NOT NULL,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS profiles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -162,6 +169,7 @@ DEFAULT_SETTINGS = {
     "youtube_api_key": "",
     "app_password_hash": "",
     "language": "en",
+    "last_auto_backup_at": "",
 }
 
 
