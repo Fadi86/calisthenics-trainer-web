@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Health Data</h1>
+<h1>{{ t("title_health") }}</h1>
 <p class="muted">Quick manual entry. File import from wearables can be added later.</p>
 
 <form method="post" action="{{ url_for('health_view') }}" class="card">

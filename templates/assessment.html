@@ -1,24 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Assessment</h1>
+<h1>{{ t('title_assessment') }}</h1>
 <p class="muted">Limited to the 4 foundational patterns you're building everything else on top of.</p>
 
 <div class="card">
   <strong>Strength Max Test</strong>
-  <p class="muted">Weighted Pull-up and Weighted Dip — reps at a given added weight gives an estimated 1RM.</p>
+  <p class="muted">Weighted Pull-up and Dip: reps at a given added weight -> estimated 1RM. Weighted Plank: it's a hold, so we log weight + duration directly (no 1RM formula applies to holds).</p>
   {% for ex_id, label in [('pull_weighted_pullup','Weighted Pull-up'), ('push_weighted_dip','Weighted Dip')] %}
   <form method="post" action="{{ url_for('assessment_max') }}" class="row" style="margin-top:8px">
     <input type="hidden" name="exercise_id" value="{{ ex_id }}">
     <span style="min-width:110px;font-size:13px">{{ label }}</span>
     <input type="number" name="reps" placeholder="reps" style="width:70px">
     <input type="number" step="0.1" name="weight_kg" placeholder="+kg" style="width:70px">
-    <button type="submit" class="secondary" style="padding:6px 10px;font-size:12px">Log Max</button>
+    <button type="submit" class="secondary" style="padding:6px 10px;font-size:12px">{{ t('btn_log_max') }}</button>
   </form>
   {% endfor %}
+  <form method="post" action="{{ url_for('assessment_max') }}" class="row" style="margin-top:8px">
+    <input type="hidden" name="exercise_id" value="core_weighted_plank">
+    <span style="min-width:110px;font-size:13px">Weighted Plank</span>
+    <input type="number" step="0.1" name="hold_seconds" placeholder="seconds" style="width:70px">
+    <input type="number" step="0.1" name="weight_kg" placeholder="+kg" style="width:70px">
+    <button type="submit" class="secondary" style="padding:6px 10px;font-size:12px">{{ t('btn_log_max') }}</button>
+  </form>
 </div>
 
 <form method="get" action="{{ url_for('assessment') }}">
-  <label>Category</label>
+  <label>{{ t('label_category') }}</label>
   <select name="category" onchange="this.form.submit()">
     {% for c in categories %}
       <option value="{{ c }}" {{ 'selected' if c == selected_category }}>{{ c|capitalize if c != 'legs' else 'Legs' }}</option>
@@ -39,13 +46,13 @@
   <p class="muted" id="metric_hint"></p>
 
   <div class="row">
-    <div style="flex:1"><label>Reps</label><input type="number" name="reps"></div>
-    <div style="flex:1"><label>Hold (seconds)</label><input type="number" step="0.1" name="hold_seconds"></div>
+    <div style="flex:1"><label>{{ t('label_reps') }}</label><input type="number" name="reps"></div>
+    <div style="flex:1"><label>{{ t('label_hold') }}</label><input type="number" step="0.1" name="hold_seconds"></div>
   </div>
-  <label>Added weight (kg)</label>
+  <label>{{ t('label_weight') }}</label>
   <input type="number" step="0.1" name="weight_kg">
 
-  <button type="submit">Run Assessment</button>
+  <button type="submit">{{ t('btn_run_assessment') }}</button>
 </form>
 
 {% if result %}

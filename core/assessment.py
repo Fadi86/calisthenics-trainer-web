@@ -146,7 +146,99 @@ def get_progress_summary(conn):
 
 def get_weighted_max(conn, exercise_id):
     row = conn.execute("""
-        SELECT * FROM assessments WHERE exercise_id = ? AND estimated_1rm IS NOT NULL
-        ORDER BY id DESC LIMIT 1
+        SELECT a.*, e.metric_type, e.name as exercise_name FROM assessments a
+        JOIN exercises e ON e.id = a.exercise_id
+        WHERE a.exercise_id = ? AND (a.estimated_1rm IS NOT NULL OR a.weight_kg IS NOT NULL)
+        ORDER BY a.id DESC LIMIT 1
     """, (exercise_id,)).fetchone()
     return dict(row) if row else None
+
+
+# Curated "known calisthenics skills" per category - shown on the Progress
+# page. Uses subcategory (movement pattern), not individual grip variants,
+# since tier is tracked per pattern, not per exercise variant.
+CURATED_PATTERNS = {
+    "pull": [("pullup", "Pull-up / Chin-up"), ("muscle_up", "Muscle-up"),
+             ("__lever__", "Skills (Front/Back Lever)")],
+    "push": [("pushup", "Push-up"), ("dip", "Dip"), ("planche", "Skills (Planche)")],
+    "core": [("lsit", "L-sit"), ("dragon_flag", "Dragon Flag"), ("leg_raise", "Leg Raise / Toes-to-Bar")],
+    "legs": [("squat", "Squat / Pistol"), ("hinge", "Hinge / Nordic Curl"), ("lunge", "Lunge")],
+}
+
+
+def _next_due(conn, last_date):
+    if not last_date:
+        return None
+    interval = int(dbmod.get_setting(conn, "reassessment_interval_days", "60"))
+    from datetime import datetime, timedelta
+    d = datetime.strptime(last_date, "%Y-%m-%d") if len(last_date) == 10 else datetime.strptime(last_date[:10], "%Y-%m-%d")
+    return (d + timedelta(days=interval)).strftime("%Y-%m-%d")
+
+
+def _review_text(status):
+    if status == "at_or_above_top":
+        return "Ready for the next tier — try progressing this pattern.", "progress"
+    if status == "below_bottom":
+        return "Below range — hold here, focus on form before adding reps.", "regress"
+    return "On track for this tier — keep training here.", "hold"
+
+
+def get_progress_detail(conn):
+    """Rich per-pattern breakdown for the Progress page: tier, last/next
+    assessment dates, and a short recommendation, curated to the well-known
+    calisthenics skills rather than every internal subcategory."""
+    detail = {}
+    for cat, patterns in CURATED_PATTERNS.items():
+        rows = []
+        for subcat, label in patterns:
+            if subcat == "__lever__":
+                tier_fl = _tier_for(conn, "pull", "front_lever")
+                tier_bl = _tier_for(conn, "pull", "back_lever")
+                tier = max(tier_fl, tier_bl)
+                last = _latest_assessment_for_subcats(conn, "pull", ["front_lever", "back_lever"])
+            else:
+                tier = _tier_for(conn, cat, subcat)
+                last = _latest_assessment_for_subcats(conn, cat, [subcat])
+            review, rec = (None, None)
+            if last:
+                review, rec = _review_text(last["status"])
+            rows.append({
+                "label": label, "tier": tier,
+                "last_date": last["date"] if last else None,
+                "next_due": _next_due(conn, last["date"]) if last else None,
+                "review": review, "recommendation": rec,
+                "exercise_name": last["exercise_name"] if last else None,
+            })
+        detail[cat] = rows
+    return detail
+
+
+def _tier_for(conn, category, subcategory):
+    row = conn.execute("SELECT current_tier FROM user_tiers WHERE movement_key = ?",
+                        (f"{category}_{subcategory}",)).fetchone()
+    return row["current_tier"] if row else 1
+
+
+def _latest_assessment_for_subcats(conn, category, subcats):
+    placeholders = ",".join("?" * len(subcats))
+    row = conn.execute(f"""
+        SELECT a.*, e.name as exercise_name, e.tier as ex_tier, e.metric_type as ex_metric_type
+        FROM assessments a
+        JOIN exercises e ON e.id = a.exercise_id
+        WHERE e.category = ? AND e.subcategory IN ({placeholders})
+        ORDER BY a.id DESC LIMIT 1
+    """, (category, *subcats)).fetchone()
+    if not row:
+        return None
+    row = dict(row)
+    value = row["hold_seconds"] if row["ex_metric_type"] == "hold_seconds" else row["reps"]
+    lo, hi = tier_range(row["ex_tier"], row["ex_metric_type"])
+    if value is None:
+        row["status"] = "no_data"
+    elif value >= hi:
+        row["status"] = "at_or_above_top"
+    elif value < lo:
+        row["status"] = "below_bottom"
+    else:
+        row["status"] = "within_range"
+    return row

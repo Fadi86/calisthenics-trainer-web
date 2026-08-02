@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Settings</h1>
+<h1>{{ t('title_settings') }}</h1>
 <form method="post" action="{{ url_for('settings_view') }}" class="card">
   <label>Reassess every (days)</label>
   <input type="number" name="interval" value="{{ current.interval }}">
+
+  <label>{{ t('label_language') }}</label>
+  <select name="language">
+    <option value="en" {{ 'selected' if current.language == 'en' }}>English</option>
+    <option value="ar" {{ 'selected' if current.language == 'ar' }}>العربية (menus only — exercise names stay English)</option>
+  </select>
 
   <label>AI feedback mode</label>
   <select name="ai_mode">
@@ -21,17 +27,30 @@
     <option value="claude-opus-4-8" {{ 'selected' if current.ai_model == 'claude-opus-4-8' }}>claude-opus-4-8</option>
   </select>
 
-  <button type="submit">Save Settings</button>
+  <button type="submit">{{ t('btn_save') }}</button>
   <p class="muted">claude_api mode sends a short summary of recent health/training numbers to Anthropic's API using the key above (billed to you). Nothing leaves the device in rule_based mode.</p>
 </form>
 
 <div class="card">
+  <strong>Change Password</strong>
+  <form method="post" action="{{ url_for('settings_view') }}">
+    <input type="hidden" name="change_password" value="1">
+    <label>Current password</label>
+    <input type="password" name="current_password">
+    <label>New password</label>
+    <input type="password" name="new_password">
+    <button type="submit" class="secondary">Update Password</button>
+    {% if password_error %}<p style="color:#e08a4e">{{ password_error }}</p>{% endif %}
+  </form>
+</div>
+
+<div class="card">
   <strong>Backup (Google Drive alternative)</strong>
-  <p class="muted">Downloads your real progress and history as one file — upload it to Drive yourself, and load it back here any time.</p>
-  <a href="{{ url_for('settings_export') }}" class="btn secondary">Download Backup (.json)</a>
+  <p class="muted">Includes your profile, assessments, tiers, sessions, and health history — upload to Drive yourself, and load it back here any time.</p>
+  <a href="{{ url_for('settings_export') }}" class="btn secondary">{{ t('btn_download_backup') }}</a>
   <form method="post" action="{{ url_for('settings_import') }}" enctype="multipart/form-data" style="margin-top:10px">
     <input type="file" name="backup_file" accept="application/json">
-    <button type="submit" class="secondary">Load Backup</button>
+    <button type="submit" class="secondary">{{ t('btn_load_backup') }}</button>
   </form>
   {% if import_error %}<p style="color:#e08a4e">{{ import_error }}</p>{% endif %}
 </div>

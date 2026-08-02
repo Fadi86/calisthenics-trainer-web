@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t('title_calendar') }}</h1>
+
+{% if not weeks %}
+  <p class="muted">No weeks yet — generate a schedule first (Schedule tab).</p>
+{% else %}
+<div class="card">
+  <label>{{ t('label_week') }}</label>
+  <select onchange="window.location.href='{{ url_for('calendar_view') }}?week=' + this.value">
+    {% for w in weeks %}
+      <option value="{{ w.week_number }}" {{ 'selected' if w.week_number == selected_week }}>
+        Week {{ w.week_number }} — {{ w.week_date }} ({{ w.days_per_week }} days)
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
+{% for day in plan %}
+<div class="card">
+  <div class="day-header">
+    <strong>Day {{ loop.index }}: {{ day.label }}</strong>
+    <span class="{{ 'duration-over' if day.estimated_minutes > 60 else 'duration-ok' }}">~{{ day.estimated_minutes }} min</span>
+  </div>
+  {% for item in day['items'] %}
+  <div class="exercise-row">
+    <span class="role-tag role-{{ item.role }}">{{ item.role }}</span>
+    <span class="tier-badge tier-{{ item.exercise.tier }}">T{{ item.exercise.tier }}</span>
+    <span class="ex-name">{{ item.exercise.name }}
+      <span class="ex-target">— {{ item.target_sets }} sets x {{ item.target_low|round(1) }}-{{ item.target_high|round(1) }}{{ 's hold' if item.metric_type == 'hold_seconds' else ' reps' }}</span>
+    </span>
+    <a class="btn watch" style="padding:6px 10px;font-size:12px" href="{{ item.watch_url }}" target="_blank" rel="noopener">{{ t('btn_watch') }}</a>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

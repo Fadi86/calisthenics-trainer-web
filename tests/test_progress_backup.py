@@ -50,11 +50,14 @@ check("shows the pull-up max we just logged (Epley 1RM of 20kg x 5 reps = 23.3kg
 
 print("[4] Weekly schedule rotation with week counter...")
 r = client.get("/schedule")
-check("shows Week 1 initially", b"Week 1" in r.data)
+check("shows Week 1 placeholder before any schedule exists", b"Week 1" in r.data)
 r = client.post("/schedule/generate", data={"days": "4"}, follow_redirects=True)
 check("status 200", r.status_code == 200)
-check("week incremented to 2", b"Week 2" in r.data)
-check("button offers Start Week 3", b"Start Week 3" in r.data)
+check("first-ever generate produces the real Week 1", b"Week 1" in r.data)
+check("button now offers Start Week 2", b"Start Week 2" in r.data)
+r = client.post("/schedule/generate", data={"days": "4"}, follow_redirects=True)
+check("second generate advances to Week 2", b"Week 2" in r.data)
+check("button now offers Start Week 3", b"Start Week 3" in r.data)
 
 print("[5] Backup export produces real downloadable JSON with our data...")
 r = client.get("/settings/export")
@@ -65,7 +68,7 @@ data = json.loads(r.data)
 check("backup contains assessments", len(data["assessments"]) >= 1)
 check("backup contains the weighted pullup assessment with correct Epley 1RM",
       any(a["exercise_id"] == "pull_weighted_pullup" and a["estimated_1rm"] == 23.3 for a in data["assessments"]))
-check("backup contains week_number setting", any(s["key"] == "week_number" and s["value"] == "2" for s in data["settings"]))
+check("backup contains profile table (even if empty)", "profile" in data)
 
 print("[6] Backup import restores state into a FRESH database...")
 fresh_db = tempfile.mktemp(suffix=".db")

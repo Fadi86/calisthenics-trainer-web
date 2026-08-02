@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Dashboard</h1>
+<h1>{{ t('title_dashboard') }}</h1>
 <div class="card">
   {% if due %}
     <strong>Reassessment due:</strong> {{ reason }}

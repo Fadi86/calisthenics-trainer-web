@@ -92,6 +92,15 @@ a { color: #6fa8ff; }
 .tier-track .seg { flex: 1; height: 8px; border-radius: 3px; background: #2a2a2a; }
 .tier-track .seg.filled { background: #3b7ddd; }
 
+.tier-badge.tier-1 { background: #2d5a3d; color: #9fe6b8; }
+.tier-badge.tier-2 { background: #2d5a5a; color: #9fe0e6; }
+.tier-badge.tier-3 { background: #2d4a6a; color: #9fc0e6; }
+.tier-badge.tier-4 { background: #5a4a2d; color: #e6c99f; }
+.tier-badge.tier-5 { background: #6a2d4a; color: #e69fc0; }
+.tier-badge.tier-6 { background: #6a2d2d; color: #e69f9f; }
+
+.type-icon { font-size: 13px; margin-right: 4px; }
+
 @media print {
   .no-print { display: none !important; }
   body { background: #fff !important; color: #111 !important; padding-bottom: 0; }

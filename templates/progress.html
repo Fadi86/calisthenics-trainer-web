@@ -1,41 +1,64 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Progress</h1>
-<p class="muted">Based on your assessment history and current tier per movement pattern.</p>
+<h1>{{ t('title_progress') }}</h1>
+<p class="muted">Curated to the well-known calisthenics skills per pattern, not every internal training variant.</p>
 
-{% for cat in core_categories %}
-{% set s = summary[cat] %}
+{% for cat, rows in detail.items() %}
 <div class="card">
-  <div class="row" style="justify-content: space-between">
-    <strong>{{ cat|capitalize if cat != 'legs' else 'Legs' }}</strong>
-    <span class="tier-badge">Tier {{ s.max_tier }}</span>
+  <strong>{{ 'Legs' if cat == 'legs' else cat|capitalize }}</strong>
+  {% for row in rows %}
+  <div style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
+    <div class="row" style="justify-content: space-between">
+      <span>{{ row.label }}</span>
+      <span class="tier-badge tier-{{ row.tier }}">T{{ row.tier }}</span>
+    </div>
+    {% if row.last_date %}
+      <p class="muted" style="margin:4px 0">
+        {{ t('last_assessed') }}: {{ row.last_date }} ({{ row.exercise_name }}) &nbsp;·&nbsp;
+        {{ t('next_due') }}: {{ row.next_due }}
+      </p>
+      <p style="font-size:12px;margin:2px 0;
+        color:{{ '#7FA06B' if row.recommendation=='progress' else '#C4623C' if row.recommendation=='regress' else '#999' }}">
+        {{ row.review }}
+      </p>
+    {% else %}
+      <p class="muted" style="margin:4px 0">{{ t('not_tested') }}</p>
+    {% endif %}
   </div>
-  <div class="tier-track">
-    {% for i in range(1,7) %}<div class="seg {{ 'filled' if i <= s.max_tier }}"></div>{% endfor %}
-  </div>
-  {% if s.last_assessment %}
-    <p class="muted">Last assessed: {{ s.last_assessment.exercise_name }} —
-      {{ s.last_assessment.reps if s.last_assessment.metric_type != 'hold_seconds' else s.last_assessment.hold_seconds }}
-      {{ 's' if s.last_assessment.metric_type == 'hold_seconds' else ' reps' }}
-      ({{ s.last_assessment.date }})</p>
-  {% else %}
-    <p class="muted">No assessment logged yet.</p>
-  {% endif %}
+  {% endfor %}
 </div>
 {% endfor %}
 
 <div class="card">
-  <strong>Weighted Strength Maxes</strong>
-  <p class="muted" style="margin-top:6px">
-    Weighted Pull-up:
-    {% if pullup_max %}<strong style="color:#6fa8ff">{{ pullup_max.estimated_1rm }} kg est. 1RM</strong> ({{ pullup_max.date }}){% else %}not tested yet{% endif %}
-  </p>
-  <p class="muted">
-    Weighted Dip:
-    {% if dip_max %}<strong style="color:#6fa8ff">{{ dip_max.estimated_1rm }} kg est. 1RM</strong> ({{ dip_max.date }}){% else %}not tested yet{% endif %}
-  </p>
-  <p class="muted">Test these from the Assessment tab (Strength Max Test section).</p>
+  <strong>{{ t('weighted_maxes') }}</strong>
+
+  <div style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
+    <span>Weighted Pull-up</span>
+    {% if pullup_max %}
+      <p class="muted" style="margin:4px 0"><strong style="color:#6fa8ff">{{ pullup_max.estimated_1rm }} kg est. 1RM</strong></p>
+      <p class="muted" style="margin:2px 0">{{ t('last_assessed') }}: {{ pullup_max.date }}</p>
+    {% else %}<p class="muted">{{ t('not_tested') }}</p>{% endif %}
+  </div>
+
+  <div style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
+    <span>Weighted Dip</span>
+    {% if dip_max %}
+      <p class="muted" style="margin:4px 0"><strong style="color:#6fa8ff">{{ dip_max.estimated_1rm }} kg est. 1RM</strong></p>
+      <p class="muted" style="margin:2px 0">{{ t('last_assessed') }}: {{ dip_max.date }}</p>
+    {% else %}<p class="muted">{{ t('not_tested') }}</p>{% endif %}
+  </div>
+
+  <div style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
+    <span>Weighted Plank</span>
+    {% if plank_max %}
+      <p class="muted" style="margin:4px 0"><strong style="color:#6fa8ff">{{ plank_max.weight_kg }} kg for {{ plank_max.hold_seconds }}s</strong></p>
+      <p class="muted" style="margin:2px 0">{{ t('last_assessed') }}: {{ plank_max.date }}
+        <span style="opacity:0.7">(a hold, not a rep max — no 1RM formula applies)</span></p>
+    {% else %}<p class="muted">{{ t('not_tested') }}</p>{% endif %}
+  </div>
+
+  <p class="muted" style="margin-top:8px">Test these from the Assessment tab (Strength Max Test section).</p>
 </div>
 
-<button class="secondary no-print" onclick="window.print()">Print / Save as PDF</button>
+<button class="secondary no-print" onclick="window.print()">{{ t('btn_print') }}</button>
 {% endblock %}

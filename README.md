@@ -4,7 +4,48 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
-## What's new in this version
+## v4.0.0 — what's new
+
+- **Password login** — first visit sets a password, every visit after
+  requires it. Your data is now protected on the public URL.
+- **Profile page** — name, gender, age, weight, height. Saved directly to
+  the server database (no manual export needed), and included in backups.
+- **Real weekly history** — generating a new schedule no longer erases the
+  old one. Every week is kept with its real calendar date. Browse them all
+  on the new **Calendar** page.
+- **Progress page rewritten** — under each of Pull/Push/Core/Legs, shows
+  the well-known calisthenics skills specifically (Pull-up/Chin-up,
+  Muscle-up, Front/Back Lever, Planche, L-sit, Dragon Flag, Pistol Squat,
+  etc.), each with its tier, last assessment date, the date your next
+  reassessment is due (computed from your Settings interval), and a short
+  recommendation (ready to progress / hold here / regress).
+- **Weighted Strength Maxes now has 3 tests**: Pull-up and Dip (reps x
+  weight -> estimated 1RM via Epley), and **Weighted Plank** — logged as
+  weight + hold duration directly, since Epley's formula is for reps, not
+  isometric holds, and applying it to a hold would just be a made-up number.
+- **Tier colors** — T1 through T6 each get a distinct color everywhere a
+  tier badge appears, for fast visual scanning.
+- **Category icons in the Library** — 💪 pull, 🔼 push, 🦵 legs, 🎯 core,
+  🤸 handstand, 🏃 conditioning, 🔥 warm-up, 🧘 mobility.
+- **Language toggle** (Settings) — Arabic for menus/labels/buttons, but
+  exercise names and cues always stay in English (that content isn't
+  translated, on purpose).
+- **PDF export with clickable YouTube links** — the Watch buttons are real
+  hyperlinks (not JavaScript), so when you Print → Save as PDF from your
+  phone, the exercise names in the PDF stay tappable and open YouTube.
+
+### Updating your already-deployed PythonAnywhere site
+
+```
+cd ~/calisthenics-trainer-web
+git pull
+```
+Then go to the Web tab and click Reload. Your existing data (assessments,
+sessions, tiers) is untouched — the database only gains new columns/tables,
+nothing is deleted. **First load after updating will ask you to set a
+password** since none existed before.
+
+## Earlier changes
 
 - **Tier badge** next to every exercise everywhere (library, schedule, train)
 - **Schedule editing** — swap, remove, or add exercises to any day, right

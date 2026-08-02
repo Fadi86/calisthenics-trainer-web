@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang == 'ar' else 'ltr' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,11 @@
 <body>
 <header class="topbar no-print">
   <span class="brand">Trainer</span>
-  <span class="version">v{{ app_version }}</span>
+  <span class="row" style="gap:10px">
+    <span class="version">v{{ app_version }}</span>
+    <a href="{{ url_for('profile_view') }}" style="font-size:11px">{{ t('title_profile') }}</a>
+    <a href="{{ url_for('logout') }}" style="font-size:11px">{{ t('btn_logout') }}</a>
+  </span>
 </header>
 
 <main class="content">
@@ -17,14 +21,15 @@
 </main>
 
 <nav class="bottomnav no-print">
-  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">Home</a>
-  <a href="{{ url_for('assessment') }}" class="{{ 'active' if request.path == '/assessment' }}">Assess</a>
-  <a href="{{ url_for('progress_view') }}" class="{{ 'active' if request.path == '/progress' }}">Progress</a>
-  <a href="{{ url_for('library_view') }}" class="{{ 'active' if request.path == '/library' }}">Library</a>
-  <a href="{{ url_for('schedule_view') }}" class="{{ 'active' if request.path == '/schedule' }}">Schedule</a>
-  <a href="{{ url_for('train_view') }}" class="{{ 'active' if request.path == '/train' }}">Train</a>
-  <a href="{{ url_for('health_view') }}" class="{{ 'active' if request.path == '/health' }}">Health</a>
-  <a href="{{ url_for('settings_view') }}" class="{{ 'active' if request.path == '/settings' }}">Settings</a>
+  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">{{ t('nav_home') }}</a>
+  <a href="{{ url_for('assessment') }}" class="{{ 'active' if request.path == '/assessment' }}">{{ t('nav_assess') }}</a>
+  <a href="{{ url_for('progress_view') }}" class="{{ 'active' if request.path == '/progress' }}">{{ t('nav_progress') }}</a>
+  <a href="{{ url_for('library_view') }}" class="{{ 'active' if request.path == '/library' }}">{{ t('nav_library') }}</a>
+  <a href="{{ url_for('schedule_view') }}" class="{{ 'active' if request.path == '/schedule' }}">{{ t('nav_schedule') }}</a>
+  <a href="{{ url_for('calendar_view') }}" class="{{ 'active' if request.path == '/calendar' }}">{{ t('nav_calendar') }}</a>
+  <a href="{{ url_for('train_view') }}" class="{{ 'active' if request.path == '/train' }}">{{ t('nav_train') }}</a>
+  <a href="{{ url_for('health_view') }}" class="{{ 'active' if request.path == '/health' }}">{{ t('nav_health') }}</a>
+  <a href="{{ url_for('settings_view') }}" class="{{ 'active' if request.path == '/settings' }}">{{ t('nav_settings') }}</a>
 </nav>
 {% block scripts %}{% endblock %}
 </body>

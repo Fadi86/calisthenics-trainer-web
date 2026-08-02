@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Exercise Library</h1>
+{% set icons = {'pull':'💪','push':'🔼','legs':'🦵','core':'🎯','handstand':'🤸','conditioning':'🏃','warmup':'🔥','mobility':'🧘'} %}
+<h1>{{ t('title_library') }}</h1>
 
 <form method="get" action="{{ url_for('library_view') }}" class="row">
   <select name="category" onchange="this.form.submit()">
-    {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}
+    {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ icons.get(c,'') }} {{ c }}</option>{% endfor %}
   </select>
   <select name="tier" onchange="this.form.submit()">
     <option value="all" {{ 'selected' if tier == 'all' }}>All tiers</option>
@@ -20,8 +21,8 @@
 {% if detail %}
 <div class="card">
   <div class="row" style="justify-content: space-between">
-    <strong>{{ detail.name }}</strong>
-    <span class="tier-badge">T{{ detail.tier }}</span>
+    <strong>{{ icons.get(detail.category,'') }} {{ detail.name }}</strong>
+    <span class="tier-badge tier-{{ detail.tier }}">T{{ detail.tier }}</span>
   </div>
   <p class="muted">{{ detail.category }}/{{ detail.subcategory }} — {{ detail.type }}, {{ detail.modality }}</p>
   <p class="muted">Equipment: {{ detail.equipment | join(', ') }}</p>
@@ -35,14 +36,15 @@
     <p><strong>Rotation alternatives</strong></p>
     <ul>{% for s in detail.siblings %}<li>{{ s.name }}</li>{% endfor %}</ul>
   {% endif %}
-  <a class="btn watch" href="{{ watch_url }}" target="_blank" rel="noopener">Watch on YouTube</a>
+  <a class="btn watch" href="{{ watch_url }}" target="_blank" rel="noopener">{{ t('btn_watch') }} on YouTube</a>
 </div>
 {% endif %}
 
 <div class="card">
   {% for e in exercises %}
     <div class="exercise-row">
-      <span class="tier-badge">T{{ e.tier }}</span>
+      <span class="type-icon">{{ icons.get(e.category,'') }}</span>
+      <span class="tier-badge tier-{{ e.tier }}">T{{ e.tier }}</span>
       <a class="ex-name" href="{{ url_for('library_view', category=category, tier=tier, type=type_, exercise=e.id) }}">{{ e.name }}</a>
       {% if e.type == 'extra' %}<span class="role-tag">extra</span>{% endif %}
     </div>

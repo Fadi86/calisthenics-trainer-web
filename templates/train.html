@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Train</h1>
+<h1>{{ t("title_train") }}</h1>
 
 <form method="get" action="{{ url_for('train_view') }}">
   <label>Day</label>
@@ -30,7 +30,7 @@
   <div class="row" style="justify-content: space-between">
     <div>
       <span class="role-tag role-{{ item.role }}">{{ item.role }}</span>
-      <span class="tier-badge">T{{ item.exercise.tier }}</span>
+      <span class="tier-badge tier-{{ item.exercise.tier }}">T{{ item.exercise.tier }}</span>
       <strong>{{ item.exercise.name }}</strong>
       <div class="ex-target">{{ item.target_sets }} sets x {{ item.target_low|round(1) }}-{{ item.target_high|round(1) }}{{ 's hold' if item.metric_type == 'hold_seconds' else ' reps' }}</div>
     </div>

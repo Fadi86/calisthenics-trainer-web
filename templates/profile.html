@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t('title_profile') }}</h1>
+<form method="post" action="{{ url_for('profile_view') }}" class="card">
+  <label>{{ t('label_name') }}</label>
+  <input type="text" name="name" value="{{ profile.name or '' }}">
+
+  <label>{{ t('label_gender') }}</label>
+  <select name="gender">
+    <option value="">—</option>
+    <option value="male" {{ 'selected' if profile.gender == 'male' }}>{{ t('gender_male') }}</option>
+    <option value="female" {{ 'selected' if profile.gender == 'female' }}>{{ t('gender_female') }}</option>
+  </select>
+
+  <label>{{ t('label_age') }}</label>
+  <input type="number" name="age" value="{{ profile.age or '' }}">
+
+  <label>{{ t('label_weight_body') }}</label>
+  <input type="number" step="0.1" name="weight_kg" value="{{ profile.weight_kg or '' }}">
+
+  <label>{{ t('label_height') }}</label>
+  <input type="number" step="0.1" name="height_cm" value="{{ profile.height_cm or '' }}">
+
+  <button type="submit">{{ t('btn_save') }}</button>
+  {% if profile.updated_at %}<p class="muted">Last updated: {{ profile.updated_at[:10] }}</p>{% endif %}
+</form>
+<p class="muted">Saved directly to the server — no manual backup needed for this. It's also included in your full backup export in Settings.</p>
+{% endblock %}

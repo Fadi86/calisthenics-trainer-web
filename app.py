@@ -12,6 +12,8 @@ from anywhere (not just home WiFi).
 """
 import os
 import json
+import secrets
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session as flask_session
 
 from core import db as dbmod
@@ -24,10 +26,20 @@ from core import ai_feedback
 from core import reminders
 from core import video_fetch
 from core import backup as backup_mod
+from core.i18n import t as translate
 from core.version import APP_VERSION
 
 app = Flask(__name__)
-app.secret_key = "calisthenics-trainer-local-only"  # local single-user app, not internet-exposed by default
+
+
+def _init_secret_key():
+    conn = get_conn()
+    key = dbmod.get_setting(conn, "flask_secret_key", "")
+    if not key:
+        key = secrets.token_hex(32)
+        dbmod.set_setting(conn, "flask_secret_key", key)
+    conn.close()
+    return key
 
 PLAN_NAME = "My Plan"
 
@@ -36,9 +48,63 @@ def get_conn():
     return dbmod.get_connection()
 
 
+@app.before_request
+def require_login():
+    if request.endpoint in ("login", "static"):
+        return
+    conn = get_conn()
+    password_hash = dbmod.get_setting(conn, "app_password_hash", "")
+    conn.close()
+    if not password_hash:
+        return  # no password set yet - first-run flow handled by the login page itself
+    if not flask_session.get("authenticated"):
+        return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    conn = get_conn()
+    password_hash = dbmod.get_setting(conn, "app_password_hash", "")
+    error = None
+    first_run = not password_hash
+
+    if request.method == "POST":
+        if first_run:
+            new_pw = request.form.get("new_password", "")
+            confirm = request.form.get("confirm_password", "")
+            if len(new_pw) < 4:
+                error = "Password must be at least 4 characters."
+            elif new_pw != confirm:
+                error = "Passwords don't match."
+            else:
+                dbmod.set_setting(conn, "app_password_hash", generate_password_hash(new_pw))
+                flask_session["authenticated"] = True
+                conn.close()
+                return redirect(url_for("dashboard"))
+        else:
+            entered = request.form.get("password", "")
+            if check_password_hash(password_hash, entered):
+                flask_session["authenticated"] = True
+                conn.close()
+                return redirect(url_for("dashboard"))
+            error = "Wrong password."
+
+    conn.close()
+    return render_template("login.html", first_run=first_run, error=error)
+
+
+@app.route("/logout")
+def logout():
+    flask_session.pop("authenticated", None)
+    return redirect(url_for("login"))
+
+
 @app.context_processor
 def inject_globals():
-    return {"app_version": APP_VERSION}
+    conn = get_conn()
+    lang = dbmod.get_setting(conn, "language", "en")
+    conn.close()
+    return {"app_version": APP_VERSION, "t": lambda key: translate(key, lang), "lang": lang}
 
 
 def resolve_watch_url(conn, exercise):
@@ -106,9 +172,14 @@ def assessment():
 def assessment_max():
     conn = get_conn()
     exercise_id = request.form.get("exercise_id")
-    reps = int(request.form.get("reps"))
     weight = float(request.form.get("weight_kg"))
-    assess_mod.record_assessment(conn, exercise_id, reps=reps, weight_kg=weight)
+    ex = library.get_exercise(conn, exercise_id)
+    if ex["metric_type"] == "hold_seconds":
+        hold = float(request.form.get("hold_seconds"))
+        assess_mod.record_assessment(conn, exercise_id, hold_seconds=hold, weight_kg=weight)
+    else:
+        reps = int(request.form.get("reps"))
+        assess_mod.record_assessment(conn, exercise_id, reps=reps, weight_kg=weight)
     conn.close()
     return redirect(url_for("progress_view"))
 
@@ -119,12 +190,42 @@ def assessment_max():
 @app.route("/progress")
 def progress_view():
     conn = get_conn()
-    summary = assess_mod.get_progress_summary(conn)
+    detail = assess_mod.get_progress_detail(conn)
     pullup_max = assess_mod.get_weighted_max(conn, "pull_weighted_pullup")
     dip_max = assess_mod.get_weighted_max(conn, "push_weighted_dip")
+    plank_max = assess_mod.get_weighted_max(conn, "core_weighted_plank")
     conn.close()
-    return render_template("progress.html", summary=summary, pullup_max=pullup_max, dip_max=dip_max,
-                            core_categories=CORE_CATEGORIES)
+    return render_template("progress.html", detail=detail, pullup_max=pullup_max, dip_max=dip_max,
+                            plank_max=plank_max)
+
+
+@app.route("/profile", methods=["GET", "POST"])
+def profile_view():
+    conn = get_conn()
+    if request.method == "POST":
+        dbmod.set_profile(
+            conn, request.form.get("name", ""), request.form.get("gender", ""),
+            int(request.form.get("age")) if request.form.get("age") else None,
+            float(request.form.get("weight_kg")) if request.form.get("weight_kg") else None,
+            float(request.form.get("height_cm")) if request.form.get("height_cm") else None,
+        )
+    profile = dbmod.get_profile(conn)
+    conn.close()
+    return render_template("profile.html", profile=profile)
+
+
+@app.route("/calendar")
+def calendar_view():
+    conn = get_conn()
+    weeks = scheduler.get_all_weeks(conn, PLAN_NAME)
+    selected_week = request.args.get("week", type=int)
+    plan = scheduler.get_schedule(conn, PLAN_NAME, week_number=selected_week) if weeks else []
+    for day in plan:
+        for item in day["items"]:
+            item["watch_url"] = resolve_watch_url(conn, item["exercise"])
+    conn.close()
+    return render_template("calendar.html", weeks=weeks, plan=plan,
+                            selected_week=selected_week or (weeks[0]["week_number"] if weeks else None))
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +269,7 @@ def schedule_view():
         for item in day["items"]:
             item["watch_url"] = resolve_watch_url(conn, item["exercise"])
     all_exercises = library.list_exercises(conn)
-    week_number = dbmod.get_setting(conn, "week_number", "1")
+    week_number = plan[0]["week_number"] if plan else 1
     conn.close()
     return render_template("schedule.html", plan=plan, all_exercises=all_exercises, week_number=week_number)
 
@@ -181,8 +282,6 @@ def schedule_generate():
     extra_hip = request.form.get("extra_hip") == "on"
     scheduler.generate_schedule(conn, days, plan_name=PLAN_NAME,
                                  extra_shoulder_mobility=extra_shoulder, extra_hip_mobility=extra_hip)
-    week = int(dbmod.get_setting(conn, "week_number", "1"))
-    dbmod.set_setting(conn, "week_number", week + 1)
     conn.close()
     return redirect(url_for("schedule_view"))
 
@@ -369,26 +468,41 @@ def _current_settings(conn):
         "ai_mode": dbmod.get_setting(conn, "ai_feedback_mode", "rule_based"),
         "ai_api_key": dbmod.get_setting(conn, "ai_api_key", ""),
         "ai_model": dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001"),
+        "language": dbmod.get_setting(conn, "language", "en"),
     }
 
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings_view():
     conn = get_conn()
+    password_error = None
     if request.method == "POST":
-        dbmod.set_setting(conn, "reassessment_interval_days", request.form.get("interval", "60"))
-        dbmod.set_setting(conn, "ai_feedback_mode", request.form.get("ai_mode", "rule_based"))
-        dbmod.set_setting(conn, "ai_api_key", request.form.get("ai_api_key", ""))
-        dbmod.set_setting(conn, "ai_model", request.form.get("ai_model", "claude-haiku-4-5-20251001"))
+        if "change_password" in request.form:
+            current = request.form.get("current_password", "")
+            new_pw = request.form.get("new_password", "")
+            stored_hash = dbmod.get_setting(conn, "app_password_hash", "")
+            if stored_hash and not check_password_hash(stored_hash, current):
+                password_error = "Current password is incorrect."
+            elif len(new_pw) < 4:
+                password_error = "New password must be at least 4 characters."
+            else:
+                dbmod.set_setting(conn, "app_password_hash", generate_password_hash(new_pw))
+        else:
+            dbmod.set_setting(conn, "reassessment_interval_days", request.form.get("interval", "60"))
+            dbmod.set_setting(conn, "ai_feedback_mode", request.form.get("ai_mode", "rule_based"))
+            dbmod.set_setting(conn, "ai_api_key", request.form.get("ai_api_key", ""))
+            dbmod.set_setting(conn, "ai_model", request.form.get("ai_model", "claude-haiku-4-5-20251001"))
+            dbmod.set_setting(conn, "language", request.form.get("language", "en"))
 
     current = _current_settings(conn)
     conn.close()
-    return render_template("settings.html", current=current)
+    return render_template("settings.html", current=current, password_error=password_error)
 
 
 def create_app():
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
     dbmod.init_db(data_dir=data_dir)
+    app.secret_key = _init_secret_key()
     return app
 
 

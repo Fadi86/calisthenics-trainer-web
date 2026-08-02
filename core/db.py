@@ -136,6 +136,16 @@ CREATE TABLE IF NOT EXISTS exercise_videos (
     fetched_at TEXT NOT NULL,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id)
 );
+
+CREATE TABLE IF NOT EXISTS profile (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    name TEXT,
+    gender TEXT,
+    age INTEGER,
+    weight_kg REAL,
+    height_cm REAL,
+    updated_at TEXT
+);
 """
 
 DEFAULT_SETTINGS = {
@@ -145,7 +155,8 @@ DEFAULT_SETTINGS = {
     "ai_api_key": "",
     "ai_model": "claude-haiku-4-5-20251001",
     "youtube_api_key": "",
-    "week_number": "1",
+    "app_password_hash": "",
+    "language": "en",
 }
 
 
@@ -202,6 +213,12 @@ def _ensure_columns(conn):
     schedule_items_cols = {row["name"] for row in conn.execute("PRAGMA table_info(schedule_items)")}
     if "role" not in schedule_items_cols:
         conn.execute("ALTER TABLE schedule_items ADD COLUMN role TEXT")
+
+    schedule_days_cols = {row["name"] for row in conn.execute("PRAGMA table_info(schedule_days)")}
+    if "week_number" not in schedule_days_cols:
+        conn.execute("ALTER TABLE schedule_days ADD COLUMN week_number INTEGER DEFAULT 1")
+    if "week_date" not in schedule_days_cols:
+        conn.execute("ALTER TABLE schedule_days ADD COLUMN week_date TEXT")
 
     conn.commit()
 
@@ -304,6 +321,21 @@ def get_setting(conn, key, default=None):
 def set_setting(conn, key, value):
     conn.execute("INSERT INTO settings (key, value) VALUES (?, ?) "
                  "ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, str(value)))
+    conn.commit()
+
+
+def get_profile(conn):
+    row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
+    return dict(row) if row else {}
+
+
+def set_profile(conn, name, gender, age, weight_kg, height_cm):
+    conn.execute("""
+        INSERT INTO profile (id, name, gender, age, weight_kg, height_cm, updated_at)
+        VALUES (1, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET name=excluded.name, gender=excluded.gender, age=excluded.age,
+            weight_kg=excluded.weight_kg, height_cm=excluded.height_cm, updated_at=excluded.updated_at
+    """, (name, gender, age, weight_kg, height_cm, now_iso()))
     conn.commit()
 
 

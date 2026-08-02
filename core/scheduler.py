@@ -10,6 +10,7 @@ following the day-segregation rules from PROGRAMMING-GUIDE.md, plus:
 import random
 from core import library
 from core import assessment as assess_mod
+from core import db as dbmod
 
 DAY_DEFS_4 = [
     {"day_type": "pull_front_lever", "label": "Pull + Front Lever", "slots": [
@@ -245,23 +246,29 @@ def build_day_exercises(conn, day_def, current_tiers, rng, extra_shoulder=False,
 
 def generate_schedule(conn, days_per_week, plan_name="My Plan", seed=None,
                        extra_shoulder_mobility=False, extra_hip_mobility=False):
+    """
+    Creates a NEW week's schedule without deleting previous weeks - past
+    weeks stay queryable for the calendar view. week_number increments
+    each call and week_date records the real calendar date it was created.
+    """
     if days_per_week not in (4, 5):
         raise ValueError("days_per_week must be 4 or 5")
     day_defs = DAY_DEFS_4 if days_per_week == 4 else DAY_DEFS_5
     rng = random.Random(seed)
     current_tiers = _get_all_current_tiers(conn)
 
-    conn.execute("DELETE FROM schedule_items WHERE schedule_day_id IN "
-                 "(SELECT id FROM schedule_days WHERE plan_name = ?)", (plan_name,))
-    conn.execute("DELETE FROM schedule_days WHERE plan_name = ?", (plan_name,))
-    conn.commit()
+    prev_week = conn.execute(
+        "SELECT COALESCE(MAX(week_number), 0) AS w FROM schedule_days WHERE plan_name = ?", (plan_name,)
+    ).fetchone()["w"]
+    week_number = prev_week + 1
+    week_date = dbmod.today_str()
 
     result = []
     for idx, day_def in enumerate(day_defs):
         cur = conn.execute(
-            "INSERT INTO schedule_days (plan_name, days_per_week, day_index, day_type, label) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (plan_name, days_per_week, idx, day_def["day_type"], day_def["label"])
+            "INSERT INTO schedule_days (plan_name, days_per_week, day_index, day_type, label, "
+            "week_number, week_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (plan_name, days_per_week, idx, day_def["day_type"], day_def["label"], week_number, week_date)
         )
         day_id = cur.lastrowid
         picks = build_day_exercises(conn, day_def, current_tiers, rng,
@@ -278,7 +285,7 @@ def generate_schedule(conn, days_per_week, plan_name="My Plan", seed=None,
         estimated_seconds = sum(estimate_item_seconds(p) for p in day_items)
         result.append({
             "day_type": day_def["day_type"], "label": day_def["label"], "items": day_items,
-            "estimated_minutes": round(estimated_seconds / 60),
+            "estimated_minutes": round(estimated_seconds / 60), "week_number": week_number, "week_date": week_date,
         })
         conn.commit()
     return result
@@ -346,9 +353,19 @@ def get_timer_params(item):
     return {"work_seconds": work_seconds, "rest_seconds": rest_seconds, "sets": sets_n}
 
 
-def get_schedule(conn, plan_name="My Plan"):
+def get_schedule(conn, plan_name="My Plan", week_number=None):
+    """Fetch a specific week's schedule, or the latest one if week_number is None."""
+    if week_number is None:
+        row = conn.execute(
+            "SELECT MAX(week_number) AS w FROM schedule_days WHERE plan_name = ?", (plan_name,)
+        ).fetchone()
+        week_number = row["w"] if row else None
+    if week_number is None:
+        return []
+
     days = conn.execute(
-        "SELECT * FROM schedule_days WHERE plan_name = ? ORDER BY day_index", (plan_name,)
+        "SELECT * FROM schedule_days WHERE plan_name = ? AND week_number = ? ORDER BY day_index",
+        (plan_name, week_number)
     ).fetchall()
     result = []
     for day in days:
@@ -362,3 +379,13 @@ def get_schedule(conn, plan_name="My Plan"):
         estimated_seconds = sum(estimate_item_seconds(p) for p in enriched)
         result.append({**dict(day), "items": enriched, "estimated_minutes": round(estimated_seconds / 60)})
     return result
+
+
+def get_all_weeks(conn, plan_name="My Plan"):
+    """For the calendar view - every week generated so far, most recent first."""
+    rows = conn.execute("""
+        SELECT week_number, MIN(week_date) as week_date, days_per_week
+        FROM schedule_days WHERE plan_name = ?
+        GROUP BY week_number ORDER BY week_number DESC
+    """, (plan_name,)).fetchall()
+    return [dict(r) for r in rows]

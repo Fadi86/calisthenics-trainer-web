@@ -17,6 +17,7 @@ def export_backup(conn):
         "session_sets": "SELECT * FROM session_sets",
         "health_metrics": "SELECT * FROM health_metrics",
         "settings": "SELECT * FROM settings",
+        "profile": "SELECT * FROM profile",
     }
     data = {"exported_at": dbmod.now_iso(), "version": 1}
     for name, query in tables.items():
@@ -68,5 +69,14 @@ def import_backup(conn, data):
 
     for row in data.get("settings", []):
         dbmod.set_setting(conn, row["key"], row["value"])
+
+    for row in data.get("profile", []):
+        conn.execute("""
+            INSERT INTO profile (id, name, gender, age, weight_kg, height_cm, updated_at)
+            VALUES (1, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET name=excluded.name, gender=excluded.gender, age=excluded.age,
+                weight_kg=excluded.weight_kg, height_cm=excluded.height_cm, updated_at=excluded.updated_at
+        """, (row.get("name"), row.get("gender"), row.get("age"), row.get("weight_kg"),
+              row.get("height_cm"), row.get("updated_at")))
 
     conn.commit()

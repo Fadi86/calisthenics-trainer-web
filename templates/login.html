@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calisthenics Trainer — Login</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="content" style="max-width:400px;margin-top:60px">
+  <h1>{{ "Set Your Password" if first_run else "Login" }}</h1>
+  {% if first_run %}
+  <p class="muted">This is your first visit — set a password to protect your data. You'll use it every time you open the app.</p>
+  <form method="post" class="card">
+    <label>New password</label>
+    <input type="password" name="new_password" autofocus>
+    <label>Confirm password</label>
+    <input type="password" name="confirm_password">
+    <button type="submit">Set Password &amp; Continue</button>
+  </form>
+  {% else %}
+  <form method="post" class="card">
+    <label>Password</label>
+    <input type="password" name="password" autofocus>
+    <button type="submit">Log In</button>
+  </form>
+  {% endif %}
+  {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+</div>
+</body>
+</html>
