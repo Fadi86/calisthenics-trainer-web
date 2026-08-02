@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Train</h1>
+
+<form method="get" action="{{ url_for('train_view') }}">
+  <label>Day</label>
+  <select name="day" onchange="this.form.submit()">
+    {% for d in plan %}
+      <option value="{{ loop.index0 }}" {{ 'selected' if loop.index0 == day_index }}>Day {{ loop.index }}: {{ d.label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if not day %}
+  <p class="muted">No schedule yet — generate one on the Schedule tab first.</p>
+{% else %}
+
+<div class="card row" style="justify-content: space-between">
+  <span id="session-status">{{ 'Session in progress' if session_id else 'No session started' }}</span>
+  <span>
+    <button id="start-btn" onclick="startSession('{{ day.day_type }}', {{ day.id }})" {{ 'disabled' if session_id }}>Start Session</button>
+    <button id="complete-btn" class="secondary" onclick="completeSession()" {{ 'disabled' if not session_id }}>Complete</button>
+  </span>
+</div>
+
+{% for item in day['items'] %}
+<div class="card" data-exercise-id="{{ item.exercise.id }}" data-target-low="{{ item.target_low }}" data-target-high="{{ item.target_high }}"
+     data-metric="{{ item.metric_type }}" data-work="{{ item.timer.work_seconds }}" data-rest="{{ item.timer.rest_seconds }}"
+     data-sets="{{ item.timer.sets }}">
+  <div class="row" style="justify-content: space-between">
+    <div>
+      <span class="role-tag role-{{ item.role }}">{{ item.role }}</span>
+      <span class="tier-badge">T{{ item.exercise.tier }}</span>
+      <strong>{{ item.exercise.name }}</strong>
+      <div class="ex-target">{{ item.target_sets }} sets x {{ item.target_low|round(1) }}-{{ item.target_high|round(1) }}{{ 's hold' if item.metric_type == 'hold_seconds' else ' reps' }}</div>
+    </div>
+    <a class="btn watch" style="padding:6px 10px;font-size:12px" href="{{ item.watch_url }}" target="_blank" rel="noopener">Watch</a>
+  </div>
+
+  <div class="timer-box" style="display:none">
+    <div class="timer-phase work">Work</div>
+    <div class="timer-display">--</div>
+    <div class="timer-set-count">Set 1 / {{ item.timer.sets }}</div>
+    <button class="secondary timer-pause">Pause</button>
+    <button class="secondary timer-skip">Skip</button>
+  </div>
+  <button class="timer-start">Start Guided Timer ({{ item.timer.work_seconds }}s work / {{ item.timer.rest_seconds }}s rest x {{ item.timer.sets }})</button>
+
+  <div class="row" style="margin-top:10px">
+    <input type="number" step="0.1" class="log-value" placeholder="{{ 'seconds' if item.metric_type == 'hold_seconds' else 'reps' }}" style="max-width:100px">
+    <button class="log-btn">Log Set</button>
+    <span class="feedback muted"></span>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/train.js') }}"></script>
+{% endblock %}

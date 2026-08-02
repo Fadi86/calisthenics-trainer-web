@@ -1,0 +1,32 @@
+{
+  "day_types": [
+    "pull_front_lever",
+    "push_planche",
+    "legs_core_muscle_up",
+    "handstand_conditioning"
+  ],
+  "categories": ["pull", "push", "legs", "core", "handstand", "conditioning"],
+  "equipment": ["bar", "rings", "parallettes", "floor", "wall", "none", "band", "weight", "box", "ab_wheel"],
+  "muscle_groups": [
+    "chest", "upper_back", "lats", "lower_back", "front_delts", "side_delts",
+    "rear_delts", "biceps", "triceps", "forearms", "abs", "obliques",
+    "hip_flexors", "glutes", "quads", "hamstrings", "adductors", "calves", "traps"
+  ],
+  "exercise_type": {
+    "main": "Pure bodyweight calisthenics skill/strength progression",
+    "extra": "Helps training but isn't itself a calisthenics skill (conditioning, isolation accessory, band prehab, loaded carries)"
+  },
+  "modality": {
+    "bodyweight": "No added load or assistance",
+    "weighted": "External load added to a bodyweight pattern (vest/belt/dumbbell)",
+    "assisted": "External help reduces difficulty (band, wall, box)"
+  },
+  "tiers": {
+    "1": "Foundation",
+    "2": "Novice",
+    "3": "Intermediate",
+    "4": "Advanced",
+    "5": "Elite",
+    "6": "Mastery"
+  }
+}

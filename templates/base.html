@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calisthenics Trainer</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="topbar no-print">
+  <span class="brand">Trainer</span>
+  <span class="version">v{{ app_version }}</span>
+</header>
+
+<main class="content">
+  {% block content %}{% endblock %}
+</main>
+
+<nav class="bottomnav no-print">
+  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">Home</a>
+  <a href="{{ url_for('assessment') }}" class="{{ 'active' if request.path == '/assessment' }}">Assess</a>
+  <a href="{{ url_for('progress_view') }}" class="{{ 'active' if request.path == '/progress' }}">Progress</a>
+  <a href="{{ url_for('library_view') }}" class="{{ 'active' if request.path == '/library' }}">Library</a>
+  <a href="{{ url_for('schedule_view') }}" class="{{ 'active' if request.path == '/schedule' }}">Schedule</a>
+  <a href="{{ url_for('train_view') }}" class="{{ 'active' if request.path == '/train' }}">Train</a>
+  <a href="{{ url_for('health_view') }}" class="{{ 'active' if request.path == '/health' }}">Health</a>
+  <a href="{{ url_for('settings_view') }}" class="{{ 'active' if request.path == '/settings' }}">Settings</a>
+</nav>
+{% block scripts %}{% endblock %}
+</body>
+</html>

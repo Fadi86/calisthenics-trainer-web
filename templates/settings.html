@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+<form method="post" action="{{ url_for('settings_view') }}" class="card">
+  <label>Reassess every (days)</label>
+  <input type="number" name="interval" value="{{ current.interval }}">
+
+  <label>AI feedback mode</label>
+  <select name="ai_mode">
+    <option value="rule_based" {{ 'selected' if current.ai_mode == 'rule_based' }}>rule_based</option>
+    <option value="claude_api" {{ 'selected' if current.ai_mode == 'claude_api' }}>claude_api</option>
+  </select>
+
+  <label>Claude API key (optional, your own)</label>
+  <input type="password" name="ai_api_key" value="{{ current.ai_api_key }}">
+
+  <label>Model</label>
+  <select name="ai_model">
+    <option value="claude-haiku-4-5-20251001" {{ 'selected' if current.ai_model == 'claude-haiku-4-5-20251001' }}>claude-haiku-4-5-20251001</option>
+    <option value="claude-sonnet-5" {{ 'selected' if current.ai_model == 'claude-sonnet-5' }}>claude-sonnet-5</option>
+    <option value="claude-opus-4-8" {{ 'selected' if current.ai_model == 'claude-opus-4-8' }}>claude-opus-4-8</option>
+  </select>
+
+  <button type="submit">Save Settings</button>
+  <p class="muted">claude_api mode sends a short summary of recent health/training numbers to Anthropic's API using the key above (billed to you). Nothing leaves the device in rule_based mode.</p>
+</form>
+
+<div class="card">
+  <strong>Backup (Google Drive alternative)</strong>
+  <p class="muted">Downloads your real progress and history as one file — upload it to Drive yourself, and load it back here any time.</p>
+  <a href="{{ url_for('settings_export') }}" class="btn secondary">Download Backup (.json)</a>
+  <form method="post" action="{{ url_for('settings_import') }}" enctype="multipart/form-data" style="margin-top:10px">
+    <input type="file" name="backup_file" accept="application/json">
+    <button type="submit" class="secondary">Load Backup</button>
+  </form>
+  {% if import_error %}<p style="color:#e08a4e">{{ import_error }}</p>{% endif %}
+</div>
+{% endblock %}

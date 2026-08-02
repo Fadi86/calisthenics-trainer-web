@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Assessment</h1>
+<p class="muted">Limited to the 4 foundational patterns you're building everything else on top of.</p>
+
+<div class="card">
+  <strong>Strength Max Test</strong>
+  <p class="muted">Weighted Pull-up and Weighted Dip — reps at a given added weight gives an estimated 1RM.</p>
+  {% for ex_id, label in [('pull_weighted_pullup','Weighted Pull-up'), ('push_weighted_dip','Weighted Dip')] %}
+  <form method="post" action="{{ url_for('assessment_max') }}" class="row" style="margin-top:8px">
+    <input type="hidden" name="exercise_id" value="{{ ex_id }}">
+    <span style="min-width:110px;font-size:13px">{{ label }}</span>
+    <input type="number" name="reps" placeholder="reps" style="width:70px">
+    <input type="number" step="0.1" name="weight_kg" placeholder="+kg" style="width:70px">
+    <button type="submit" class="secondary" style="padding:6px 10px;font-size:12px">Log Max</button>
+  </form>
+  {% endfor %}
+</div>
+
+<form method="get" action="{{ url_for('assessment') }}">
+  <label>Category</label>
+  <select name="category" onchange="this.form.submit()">
+    {% for c in categories %}
+      <option value="{{ c }}" {{ 'selected' if c == selected_category }}>{{ c|capitalize if c != 'legs' else 'Legs' }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<form method="post" action="{{ url_for('assessment') }}">
+  <input type="hidden" name="category" value="{{ selected_category }}">
+  <label>Exercise</label>
+  <select name="exercise_id" id="exercise_id" onchange="updateHint()">
+    {% for e in exercises %}
+      <option value="{{ e.id }}" data-metric="{{ e.metric_type }}" {{ 'selected' if loop.first }}>
+        T{{ e.tier }} — {{ e.name }}
+      </option>
+    {% endfor %}
+  </select>
+  <p class="muted" id="metric_hint"></p>
+
+  <div class="row">
+    <div style="flex:1"><label>Reps</label><input type="number" name="reps"></div>
+    <div style="flex:1"><label>Hold (seconds)</label><input type="number" step="0.1" name="hold_seconds"></div>
+  </div>
+  <label>Added weight (kg)</label>
+  <input type="number" step="0.1" name="weight_kg">
+
+  <button type="submit">Run Assessment</button>
+</form>
+
+{% if result %}
+  <div class="card result-box">
+    {% if result.error %}
+      <strong>{{ result.error }}</strong>
+    {% else %}
+{{ result.exercise_name }} — tier {{ result.tier }}
+Target range: {{ result.range_low }}-{{ result.range_high }} ({{ result.metric_type }})
+Your value: {{ result.value if result.value is not none else "not logged" }}
+Status: {{ result.status.replace('_', ' ') }}
+{% if result.estimated_1rm %}Estimated 1RM (added load): {{ result.estimated_1rm }} kg{% endif %}
+Working tier assigned: {{ result.assigned_tier }}
+    {% endif %}
+  </div>
+{% endif %}
+
+<script>
+function updateHint() {
+  const sel = document.getElementById('exercise_id');
+  const metric = sel.options[sel.selectedIndex].dataset.metric;
+  document.getElementById('metric_hint').textContent =
+    metric === 'hold_seconds' ? 'Measured by: hold time — use the Hold field' : 'Measured by: reps — use the Reps field';
+}
+updateHint();
+</script>
+{% endblock %}

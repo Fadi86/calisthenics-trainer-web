@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="card">
+  {% if due %}
+    <strong>Reassessment due:</strong> {{ reason }}
+  {% else %}
+    <strong>On track:</strong> {{ reason }}
+  {% endif %}
+</div>
+<div class="stat-row">
+  <div class="stat"><span class="num">{{ ex_count }}</span><span class="label">Exercises</span></div>
+  <div class="stat"><span class="num">{{ as_count }}</span><span class="label">Assessments</span></div>
+  <div class="stat"><span class="num">{{ se_count }}</span><span class="label">Sessions</span></div>
+</div>
+<a href="{{ url_for('train_view') }}" class="btn">Start today's session</a>
+{% endblock %}

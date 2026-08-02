@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Schedule <span class="muted" style="font-size:13px;font-weight:400">— Week {{ week_number }}</span></h1>
+
+<form method="post" action="{{ url_for('schedule_generate') }}" class="card">
+  <label>Days per week</label>
+  <select name="days">
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
+  <div class="checkbox-row"><input type="checkbox" name="extra_shoulder" id="es"><label for="es" style="margin:0">Extra shoulder mobility</label></div>
+  <div class="checkbox-row"><input type="checkbox" name="extra_hip" id="eh"><label for="eh" style="margin:0">Extra hip mobility</label></div>
+  <button type="submit">{{ 'Start Week ' ~ (week_number|int + 1) ~ ' (new exercises)' if plan else 'Generate Schedule' }}</button>
+  {% if plan %}<button type="button" class="secondary no-print" onclick="window.print()">Print / Save as PDF</button>{% endif %}
+  <p class="muted">Uses your latest assessed tiers, and shuffles among same-tier alternatives each week. Each day is capped near 60 min.</p>
+</form>
+
+{% if not plan %}
+  <p class="muted">No schedule yet — pick days per week and generate above.</p>
+{% endif %}
+
+{% for day in plan %}
+<div class="card">
+  <div class="day-header">
+    <strong>Day {{ loop.index }}: {{ day.label }}</strong>
+    <span class="{{ 'duration-over' if day.estimated_minutes > 60 else 'duration-ok' }}">
+      ~{{ day.estimated_minutes }} min{{ ' (over 60)' if day.estimated_minutes > 60 }}
+    </span>
+  </div>
+
+  {% for item in day['items'] %}
+  <div class="exercise-row">
+    <span class="role-tag role-{{ item.role }}">{{ item.role }}</span>
+    <span class="tier-badge">T{{ item.exercise.tier }}</span>
+    <span class="ex-name">{{ item.exercise.name }}
+      <span class="ex-target">— {{ item.target_sets }} sets x {{ item.target_low|round(1) }}-{{ item.target_high|round(1) }}{{ 's hold' if item.metric_type == 'hold_seconds' else ' reps' }}</span>
+    </span>
+    <a class="btn watch" style="padding:6px 10px;font-size:12px" href="{{ item.watch_url }}" target="_blank" rel="noopener">Watch</a>
+    <details>
+      <summary style="cursor:pointer;font-size:12px;color:#888">Edit</summary>
+      <form method="post" action="{{ url_for('schedule_swap', item_id=item.id) }}" style="margin-top:6px">
+        <select name="new_exercise_id" style="font-size:13px">
+          {% for e in all_exercises if e.category == item.exercise.category %}
+            <option value="{{ e.id }}" {{ 'selected' if e.id == item.exercise.id }}>T{{ e.tier }} — {{ e.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="secondary" style="padding:6px 10px;font-size:12px">Swap</button>
+      </form>
+      <form method="post" action="{{ url_for('schedule_remove', item_id=item.id) }}" style="margin-top:6px">
+        <button type="submit" class="danger" style="padding:6px 10px;font-size:12px">Remove</button>
+      </form>
+    </details>
+  </div>
+  {% endfor %}
+
+  <details style="margin-top:10px">
+    <summary style="cursor:pointer;font-size:13px;color:#6fa8ff">+ Add exercise to this day</summary>
+    <form method="post" action="{{ url_for('schedule_add', day_id=day.id) }}" style="margin-top:8px">
+      <select name="exercise_id">
+        {% for e in all_exercises %}
+          <option value="{{ e.id }}">{{ e.category }} / T{{ e.tier }} — {{ e.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="role">
+        <option value="main">Main</option>
+        <option value="extra" selected>Extra</option>
+        <option value="skill">Skill</option>
+      </select>
+      <button type="submit" class="secondary">Add</button>
+    </form>
+  </details>
+</div>
+{% endfor %}
+{% endblock %}

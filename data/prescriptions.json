@@ -1,0 +1,19 @@
+{
+  "by_tier": {
+    "1": { "label": "Foundation", "sets": "3", "reps_range": "8-15", "hold_range_seconds": "20-30", "rest_seconds": "60-90" },
+    "2": { "label": "Novice",     "sets": "3-4", "reps_range": "8-12", "hold_range_seconds": "20-30", "rest_seconds": "60-90" },
+    "3": { "label": "Intermediate", "sets": "4", "reps_range": "5-10", "hold_range_seconds": "10-20", "rest_seconds": "90-120" },
+    "4": { "label": "Advanced",  "sets": "4-5", "reps_range": "3-6", "hold_range_seconds": "5-10", "rest_seconds": "120-150" },
+    "5": { "label": "Elite",     "sets": "5", "reps_range": "1-5", "hold_range_seconds": "3-8", "rest_seconds": "150-180" },
+    "6": { "label": "Mastery",   "sets": "5-6", "reps_range": "1-3", "hold_range_seconds": "2-6", "rest_seconds": "180-240" }
+  },
+  "conditioning_or_extra": {
+    "sets": "3-4",
+    "reps_or_time": "30-60s or AMRAP",
+    "rest_seconds": "30-60"
+  },
+  "progression_rule": "Hit the TOP of the rep/hold range with clean form for 2 consecutive sessions -> move to the next exercise via progression_to. Restart at the BOTTOM of the new exercise's range.",
+  "regression_rule": "Miss the BOTTOM of the rep/hold range for 2 consecutive sessions, OR form consistently breaks per that exercise's common_faults -> step back via regression_of for 1-2 weeks, then retest.",
+  "deload_rule": "Every 4-6 weeks, cut volume by ~40% (drop a set, or cut sessions to 2 instead of 4-5 exercises) regardless of how progression is going. This is separate from progression/regression and happens on a fixed schedule.",
+  "assessment_use": "is_assessment exercises are the checkpoint moves (strict pull-up, full front lever, pistol squat, freestanding handstand hold, etc). Re-test these every 4-8 weeks to decide whether to shift the whole rotation_group up a tier, not just one exercise."
+}

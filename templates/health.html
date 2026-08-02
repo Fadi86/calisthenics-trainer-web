@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Health Data</h1>
+<p class="muted">Quick manual entry. File import from wearables can be added later.</p>
+
+<form method="post" action="{{ url_for('health_view') }}" class="card">
+  <label>Resting HR (bpm)</label>
+  <input type="number" step="0.1" name="resting_hr">
+  <label>Sleep last night (hours)</label>
+  <input type="number" step="0.1" name="sleep_hours">
+  <button type="submit">Save Metrics</button>
+</form>
+
+<div class="card">
+  <button onclick="getFeedback()">Get Feedback</button>
+  <div id="feedback-result" class="result-box" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <h2>Recent metrics (30 days)</h2>
+  {% for r in recent %}
+    <div class="exercise-row"><span class="muted">{{ r.date }}</span> <span>{{ r.metric }}: {{ r.avg_value|round(1) }} {{ r.unit or '' }}</span></div>
+  {% else %}
+    <p class="muted">No health data yet.</p>
+  {% endfor %}
+</div>
+
+<script>
+async function getFeedback() {
+  const res = await fetch("/api/health/feedback");
+  const data = await res.json();
+  document.getElementById("feedback-result").textContent = `[${data.source}]\n\n` + data.messages.join("\n\n");
+}
+</script>
+{% endblock %}
