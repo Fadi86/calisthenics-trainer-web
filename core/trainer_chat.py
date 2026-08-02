@@ -87,11 +87,11 @@ def _call_claude(api_key, model, messages):
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.URLError as e:
-        raise ConnectionError(f"Could not reach Claude API: {e}")
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="ignore")
         raise ConnectionError(f"Claude API returned an error ({e.code}): {detail[:200]}")
+    except urllib.error.URLError as e:
+        raise ConnectionError(f"Could not reach Claude API: {e}")
 
     if "error" in data:
         raise ConnectionError(f"Claude API error: {data['error'].get('message', data['error'])}")
@@ -101,7 +101,10 @@ def _call_claude(api_key, model, messages):
 
 def _call_gemini(api_key, model, messages):
     """Gemini uses 'user'/'model' roles (not 'user'/'assistant'), and a
-    separate systemInstruction field rather than a 'system' message."""
+    separate systemInstruction field rather than a 'system' message. The
+    API key is sent both as the x-goog-api-key header AND as a ?key= query
+    param - different Gemini doc versions/client libraries expect one or
+    the other, so sending both costs nothing and removes the ambiguity."""
     if not api_key:
         raise ValueError("No API key configured — set your own API key in Settings first.")
 
@@ -112,7 +115,7 @@ def _call_gemini(api_key, model, messages):
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "generationConfig": {"maxOutputTokens": 400},
     }).encode("utf-8")
-    url = GEMINI_URL_TEMPLATE.format(model=model)
+    url = GEMINI_URL_TEMPLATE.format(model=model) + f"?key={api_key}"
     req = urllib.request.Request(
         url, data=body,
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
@@ -121,11 +124,11 @@ def _call_gemini(api_key, model, messages):
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.URLError as e:
-        raise ConnectionError(f"Could not reach Gemini API: {e}")
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="ignore")
-        raise ConnectionError(f"Gemini API returned an error ({e.code}): {detail[:200]}")
+        raise ConnectionError(f"Gemini API returned an error ({e.code}) for model '{model}': {detail[:300]}")
+    except urllib.error.URLError as e:
+        raise ConnectionError(f"Could not reach Gemini API: {e}")
 
     if "error" in data:
         raise ConnectionError(f"Gemini API error: {data['error'].get('message', data['error'])}")

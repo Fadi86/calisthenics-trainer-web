@@ -23,7 +23,7 @@
   <label>Model</label>
   <input type="text" name="ai_model" id="ai_model" value="{{ current.ai_model }}">
   <p class="muted" style="margin-top:2px">
-    Claude example: claude-haiku-4-5-20251001 &nbsp;·&nbsp; Gemini example: gemini-2.5-flash-lite
+    Claude example: claude-haiku-4-5-20251001 &nbsp;·&nbsp; Gemini example: gemini-2.5-flash (or gemini-1.5-flash if that 404s on your key)
   </p>
 
   <button type="submit">{{ t('btn_save') }}</button>
@@ -38,7 +38,7 @@ function updateModelDefault() {
   const provider = document.getElementById("ai_provider").value;
   const modelInput = document.getElementById("ai_model");
   if (modelInput.value === "" || modelInput.dataset.autofilled === "1") {
-    modelInput.value = provider === "gemini" ? "gemini-2.5-flash-lite" : "claude-haiku-4-5-20251001";
+    modelInput.value = provider === "gemini" ? "gemini-2.5-flash" : "claude-haiku-4-5-20251001";
     modelInput.dataset.autofilled = "1";
   }
 }

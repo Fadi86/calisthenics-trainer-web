@@ -52,6 +52,8 @@ with patch("core.trainer_chat.urllib.request.urlopen") as mock_urlopen, \
     url_arg = call_kwargs[0][0]
     check(f"URL includes the correct model ('{url_arg}')", "gemini-2.5-flash-lite:generateContent" in url_arg)
     check("URL points at the real Gemini endpoint", "generativelanguage.googleapis.com" in url_arg)
+    check("URL also includes the API key as a ?key= query param (dual auth, for maximum compatibility)",
+          "?key=fake-gemini-key" in url_arg)
 
     headers = call_kwargs[1]["headers"]
     check("uses x-goog-api-key header (Gemini's auth scheme, different from Claude's x-api-key)",
@@ -90,6 +92,29 @@ try:
     check("should have raised", False)
 except ValueError as e:
     check(f"clear error: '{e}'", "API key" in str(e))
+
+print("[5] A real 404 (bad model name) produces a clear, specific error - not a generic one...")
+import urllib.error
+
+
+class FakeHTTPError(urllib.error.HTTPError):
+    def __init__(self, code, body):
+        super().__init__("http://fake", code, "Not Found", {}, None)
+        self._body = body.encode("utf-8")
+
+    def read(self):
+        return self._body
+
+
+with patch("core.trainer_chat.urllib.request.urlopen") as mock_urlopen:
+    mock_urlopen.side_effect = FakeHTTPError(404, '{"error": {"message": "models/bad-model is not found"}}')
+    try:
+        trainer_chat._call_gemini("fake-key", "bad-model", [{"role": "user", "content": "hi"}])
+        check("should have raised", False)
+    except ConnectionError as e:
+        check(f"error message includes the actual model name that failed: '{e}'", "bad-model" in str(e))
+        check("error message includes the actual 404 response body from Gemini",
+              "not found" in str(e).lower())
 
 print("\nALL GEMINI INTEGRATION TESTS PASSED")
 conn.close()

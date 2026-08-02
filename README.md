@@ -4,6 +4,22 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.7.1 — real bug fix: error messages were hiding the actual detail
+
+Found while chasing down the Gemini 404: `except urllib.error.URLError`
+was placed BEFORE `except urllib.error.HTTPError` in both the Claude and
+Gemini call functions. Since `HTTPError` is a subclass of `URLError`,
+Python matched the first (wrong) clause every time - meaning every HTTP
+error (401, 404, 429, etc.) from either provider showed a generic
+"Could not reach the API" message instead of the specific detail Gemini
+or Claude actually sent back (which exact model wasn't found, which key
+was rejected, etc.). Swapped the order so the specific error always wins.
+
+Also added the API key as a `?key=` query param in addition to the
+`x-goog-api-key` header for Gemini calls (different doc versions show
+different auth methods - sending both removes the ambiguity), and error
+messages now include which model name was being requested.
+
 ## v5.7.0 — Gemini as a free alternative to Claude
 
 Settings now has an "AI Provider" choice: Claude (paid, usage-billed) or
