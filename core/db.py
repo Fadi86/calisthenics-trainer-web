@@ -139,6 +139,14 @@ CREATE TABLE IF NOT EXISTS exercise_videos (
     FOREIGN KEY (exercise_id) REFERENCES exercises(id)
 );
 
+CREATE TABLE IF NOT EXISTS trainer_chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS chat_messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     profile_id INTEGER NOT NULL,

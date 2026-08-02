@@ -18,7 +18,7 @@ import os
 import json
 import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session as flask_session, Response
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session as flask_session, Response, flash
 
 from core import db as dbmod
 from core import library
@@ -26,6 +26,7 @@ from core import assessment as assess_mod
 from core import scheduler
 from core import progression
 from core import chat as chat_mod
+from core import trainer_chat
 from core import reminders
 from core import video_fetch
 from core import backup as backup_mod
@@ -264,9 +265,85 @@ def progress_view():
     pullup_max = assess_mod.get_weighted_max(conn, pid, "pull_weighted_pullup")
     dip_max = assess_mod.get_weighted_max(conn, pid, "push_weighted_dip")
     plank_max = assess_mod.get_weighted_max(conn, pid, "core_weighted_plank")
+    history = assess_mod.get_assessment_history(conn, pid, limit=25)
+    ai_conversation = trainer_chat.get_conversation(conn, pid)
     conn.close()
     return render_template("progress.html", detail=detail, pullup_max=pullup_max, dip_max=dip_max,
-                            plank_max=plank_max)
+                            plank_max=plank_max, history=history, ai_conversation=ai_conversation)
+
+
+@app.route("/progress/ai_recommendation", methods=["POST"])
+def progress_ai_recommendation():
+    conn = get_conn()
+    pid = current_profile_id()
+    api_key = dbmod.get_setting(conn, "ai_api_key", "")
+    model = dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001")
+    try:
+        trainer_chat.get_initial_recommendation(conn, pid, api_key, model)
+    except (ValueError, ConnectionError) as e:
+        flash(str(e), "ai_error")
+    conn.close()
+    return redirect(url_for("progress_view"))
+
+
+@app.route("/api/trainer_chat/send", methods=["POST"])
+def api_trainer_chat_send():
+    conn = get_conn()
+    pid = current_profile_id()
+    api_key = dbmod.get_setting(conn, "ai_api_key", "")
+    model = dbmod.get_setting(conn, "ai_model", "claude-haiku-4-5-20251001")
+    message = request.get_json(force=True).get("message", "").strip()
+    if not message:
+        conn.close()
+        return jsonify({"error": "Empty message"}), 400
+    try:
+        reply = trainer_chat.continue_conversation(conn, pid, api_key, model, message)
+        conn.close()
+        return jsonify({"reply": reply})
+    except (ValueError, ConnectionError) as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/progress/ai_clear", methods=["POST"])
+def progress_ai_clear():
+    conn = get_conn()
+    pid = current_profile_id()
+    trainer_chat.clear_conversation(conn, pid)
+    conn.close()
+    return redirect(url_for("progress_view"))
+
+
+@app.route("/assessment/edit/<int:assessment_id>", methods=["POST"])
+def assessment_edit(assessment_id):
+    conn = get_conn()
+    pid = current_profile_id()
+    reps = request.form.get("reps")
+    hold = request.form.get("hold_seconds")
+    weight = request.form.get("weight_kg")
+    try:
+        assess_mod.update_assessment(
+            conn, pid, assessment_id,
+            reps=int(reps) if reps else None,
+            hold_seconds=float(hold) if hold else None,
+            weight_kg=float(weight) if weight else None,
+        )
+    except ValueError:
+        pass
+    conn.close()
+    return redirect(url_for("progress_view"))
+
+
+@app.route("/assessment/delete/<int:assessment_id>", methods=["POST"])
+def assessment_delete(assessment_id):
+    conn = get_conn()
+    pid = current_profile_id()
+    try:
+        assess_mod.delete_assessment(conn, pid, assessment_id)
+    except ValueError:
+        pass
+    conn.close()
+    return redirect(url_for("progress_view"))
 
 
 @app.route("/profile", methods=["GET", "POST"])
@@ -290,14 +367,66 @@ def calendar_view():
     conn = get_conn()
     pid = current_profile_id()
     weeks = scheduler.get_all_weeks(conn, pid, PLAN_NAME)
-    selected_week = request.args.get("week", type=int)
+    week_numbers = [w["week_number"] for w in weeks]
+    selected_week = request.args.get("week", type=int) or (week_numbers[0] if week_numbers else None)
     plan = scheduler.get_schedule(conn, pid, PLAN_NAME, week_number=selected_week) if weeks else []
     for day in plan:
         for item in day["items"]:
             item["watch_url"] = resolve_watch_url(conn, item["exercise"])
+        day["session"] = progression.get_session_for_day(conn, pid, day["id"])
+
+    sorted_weeks = sorted(week_numbers)
+    prev_week, next_week = None, None
+    if selected_week in sorted_weeks:
+        idx = sorted_weeks.index(selected_week)
+        prev_week = sorted_weeks[idx - 1] if idx > 0 else None
+        next_week = sorted_weeks[idx + 1] if idx < len(sorted_weeks) - 1 else None
     conn.close()
-    return render_template("calendar.html", weeks=weeks, plan=plan,
-                            selected_week=selected_week or (weeks[0]["week_number"] if weeks else None))
+    return render_template("calendar.html", weeks=weeks, plan=plan, selected_week=selected_week,
+                            prev_week=prev_week, next_week=next_week)
+
+
+@app.route("/calendar/session_set/edit/<int:set_id>", methods=["POST"])
+def calendar_edit_set(set_id):
+    conn = get_conn()
+    pid = current_profile_id()
+    reps = request.form.get("reps_done")
+    hold = request.form.get("hold_done")
+    week = request.form.get("week", type=int)
+    try:
+        progression.update_session_set(conn, pid, set_id,
+                                        reps_done=int(reps) if reps else None,
+                                        hold_done=float(hold) if hold else None)
+    except ValueError:
+        pass
+    conn.close()
+    return redirect(url_for("calendar_view", week=week))
+
+
+@app.route("/calendar/session_set/delete/<int:set_id>", methods=["POST"])
+def calendar_delete_set(set_id):
+    conn = get_conn()
+    pid = current_profile_id()
+    week = request.form.get("week", type=int)
+    try:
+        progression.delete_session_set(conn, pid, set_id)
+    except ValueError:
+        pass
+    conn.close()
+    return redirect(url_for("calendar_view", week=week))
+
+
+@app.route("/calendar/session/delete/<int:session_id>", methods=["POST"])
+def calendar_delete_session(session_id):
+    conn = get_conn()
+    pid = current_profile_id()
+    week = request.form.get("week", type=int)
+    try:
+        progression.delete_session(conn, pid, session_id)
+    except ValueError:
+        pass
+    conn.close()
+    return redirect(url_for("calendar_view", week=week))
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +499,33 @@ def schedule_generate():
     extra_hip = request.form.get("extra_hip") == "on"
     scheduler.generate_schedule(conn, pid, days, plan_name=PLAN_NAME,
                                  extra_shoulder_mobility=extra_shoulder, extra_hip_mobility=extra_hip)
+    conn.close()
+    return redirect(url_for("schedule_view"))
+
+
+@app.route("/schedule/regenerate", methods=["POST"])
+def schedule_regenerate():
+    """Redo THIS week with fresh picks - doesn't advance to a new week."""
+    conn = get_conn()
+    pid = current_profile_id()
+    extra_shoulder = request.form.get("extra_shoulder") == "on"
+    extra_hip = request.form.get("extra_hip") == "on"
+    try:
+        scheduler.regenerate_current_week(conn, pid, plan_name=PLAN_NAME,
+                                           extra_shoulder_mobility=extra_shoulder, extra_hip_mobility=extra_hip)
+    except ValueError:
+        pass  # nothing to regenerate yet - fine, just no-op
+    conn.close()
+    return redirect(url_for("schedule_view"))
+
+
+@app.route("/schedule/delete_week", methods=["POST"])
+def schedule_delete_week():
+    conn = get_conn()
+    pid = current_profile_id()
+    week_number = request.form.get("week_number", type=int)
+    if week_number:
+        scheduler.delete_week(conn, pid, week_number, plan_name=PLAN_NAME)
     conn.close()
     return redirect(url_for("schedule_view"))
 

@@ -39,6 +39,64 @@ def log_set(conn, session_id, exercise_id, set_number, target_low, target_high,
     return feedback
 
 
+def get_session_for_day(conn, profile_id, schedule_day_id):
+    """The most recent session tied to this specific scheduled day, plus
+    everything logged in it - what you actually did, for showing in the
+    Calendar next to what was planned."""
+    session = conn.execute("""
+        SELECT * FROM sessions WHERE profile_id = ? AND schedule_day_id = ?
+        ORDER BY id DESC LIMIT 1
+    """, (profile_id, schedule_day_id)).fetchone()
+    if not session:
+        return None
+    sets = conn.execute("""
+        SELECT ss.*, e.name as exercise_name FROM session_sets ss
+        JOIN exercises e ON e.id = ss.exercise_id
+        WHERE ss.session_id = ? ORDER BY ss.id
+    """, (session["id"],)).fetchall()
+    return {**dict(session), "sets": [dict(s) for s in sets]}
+
+
+def update_session_set(conn, profile_id, set_id, reps_done=None, hold_done=None, weight_done=None):
+    row = conn.execute("""
+        SELECT ss.* FROM session_sets ss JOIN sessions s ON s.id = ss.session_id
+        WHERE ss.id = ? AND s.profile_id = ?
+    """, (set_id, profile_id)).fetchone()
+    if not row:
+        raise ValueError("Set not found for this profile.")
+    value = hold_done if hold_done is not None else reps_done
+    feedback = _live_feedback(value, row["target_low"], row["target_high"])
+    conn.execute("""
+        UPDATE session_sets SET reps_done = ?, hold_done = ?, weight_done = ?, feedback = ?
+        WHERE id = ?
+    """, (reps_done, hold_done, weight_done, feedback["message"], set_id))
+    conn.commit()
+    return feedback
+
+
+def delete_session_set(conn, profile_id, set_id):
+    row = conn.execute("""
+        SELECT ss.id FROM session_sets ss JOIN sessions s ON s.id = ss.session_id
+        WHERE ss.id = ? AND s.profile_id = ?
+    """, (set_id, profile_id)).fetchone()
+    if not row:
+        raise ValueError("Set not found for this profile.")
+    conn.execute("DELETE FROM session_sets WHERE id = ?", (set_id,))
+    conn.commit()
+
+
+def delete_session(conn, profile_id, session_id):
+    """Removes an entire logged session and its sets - 'everything
+    editable and deletable, even the history'."""
+    owned = conn.execute("SELECT id FROM sessions WHERE id = ? AND profile_id = ?",
+                          (session_id, profile_id)).fetchone()
+    if not owned:
+        raise ValueError("Session not found for this profile.")
+    conn.execute("DELETE FROM session_sets WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.commit()
+
+
 def _live_feedback(value, target_low, target_high):
     if value is None:
         return {"status": "no_data", "message": "No value logged for this set."}

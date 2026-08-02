@@ -15,6 +15,21 @@
   <p class="muted">Uses your latest assessed tiers, and shuffles among same-tier alternatives each week. Each day is capped near 60 min.</p>
 </form>
 
+{% if plan %}
+<div class="card row no-print" style="gap:8px">
+  <form method="post" action="{{ url_for('schedule_regenerate') }}" onsubmit="return confirm('Redo Week {{ week_number }} with fresh picks? This replaces the current week, it does not create a new one.')">
+    <input type="hidden" name="extra_shoulder" value="on">
+    <input type="hidden" name="extra_hip" value="on">
+    <button type="submit" class="secondary">Redo Week {{ week_number }} (same week, new picks)</button>
+  </form>
+  <form method="post" action="{{ url_for('schedule_delete_week') }}" onsubmit="return confirm('Delete Week {{ week_number }} entirely? This cannot be undone.')">
+    <input type="hidden" name="week_number" value="{{ week_number }}">
+    <button type="submit" class="danger">Delete Week {{ week_number }}</button>
+  </form>
+</div>
+<p class="muted" style="margin-top:-6px">Want an older week back? Browse and manage all past weeks from the Calendar tab.</p>
+{% endif %}
+
 {% if not plan %}
   <p class="muted">No schedule yet — pick days per week and generate above.</p>
 {% endif %}

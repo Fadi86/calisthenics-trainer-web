@@ -4,6 +4,45 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.6.0 — Instant Trainer Recommendation (AI chat on Progress)
+
+New card at the bottom of the Progress page: "Get Instant Trainer
+Recommendation" sends your real progress data (tiers, last-tested dates,
+weighted maxes, recent assessment history) to Claude and gets back a
+specific, grounded recommendation - not generic advice. After that, a
+chat box lets you keep asking follow-ups ("why am I stuck on X") with the
+same context still in play.
+
+**Requires your own Anthropic API key**, set in Settings (same field the
+old Health page used) - billed to you directly, nothing is embedded in
+the app. No key set -> a clear message telling you to add one, not a
+crash. "Clear conversation" resets and lets you start fresh any time.
+
+This conversation is private to your profile - it's stored separately
+from the shared group Chat between the 5 profiles, and never mixes with
+another profile's data.
+
+## v5.5.0 — full history management (redo weeks, edit/delete everything)
+
+- **Redo Week** (Schedule tab) - regenerates the CURRENT week with fresh
+  picks instead of always creating a new one. "Start Week N" still moves
+  forward; this replaces in place.
+- **Delete Week** (Schedule and Calendar tabs) - removes a week from
+  history entirely.
+- **Calendar prev/next navigation** - step through weeks directly instead
+  of only using the dropdown.
+- **Calendar now shows what you actually logged**, not just what was
+  planned - each day shows a real "Actually logged" section with your
+  logged sets, and you can edit or delete individual sets, or the whole
+  session, right there.
+- **Assessment History** (Progress tab) - your last 25 assessments, each
+  editable or deletable. Fixing a typo or removing a bad entry correctly
+  recomputes the tier from whatever assessment is now the most recent for
+  that pattern - confirmed this handles the "performance dropped due to
+  injury" case correctly too (tested end-to-end: strong result -> tier up,
+  weak result entered afterward -> tier correctly comes back down, Progress
+  page shows "regress").
+
 ## v5.4.0 — "Full Body" groups the non-muscle categories
 
 The category dropdown (1st classification) had Conditioning/Mobility/

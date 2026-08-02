@@ -122,6 +122,95 @@ def last_assessment_date(conn, profile_id):
     return row["d"] if row else None
 
 
+def get_assessment_history(conn, profile_id, category=None, limit=100):
+    """Every past assessment for this profile, most recent first - for
+    reviewing/correcting mistakes, not just the single latest one."""
+    q = """
+        SELECT a.*, e.name as exercise_name, e.category, e.subcategory, e.metric_type
+        FROM assessments a JOIN exercises e ON e.id = a.exercise_id
+        WHERE a.profile_id = ?
+    """
+    params = [profile_id]
+    if category:
+        q += " AND e.category = ?"
+        params.append(category)
+    q += " ORDER BY a.id DESC LIMIT ?"
+    params.append(limit)
+    return [dict(r) for r in conn.execute(q, params).fetchall()]
+
+
+def _recompute_tier_for_movement(conn, profile_id, category, subcategory):
+    """Sets the working tier for this movement pattern based on whatever
+    is now the MOST RECENT assessment for it - called after an edit or
+    delete, since correcting or removing an old entry should update the
+    tier to reflect what's actually still on record, not silently leave
+    a stale value from before the correction."""
+    movement_key = f"{category}_{subcategory}"
+    latest = conn.execute("""
+        SELECT a.*, e.tier as ex_tier, e.metric_type as ex_metric_type FROM assessments a
+        JOIN exercises e ON e.id = a.exercise_id
+        WHERE a.profile_id = ? AND e.category = ? AND e.subcategory = ?
+        ORDER BY a.id DESC LIMIT 1
+    """, (profile_id, category, subcategory)).fetchone()
+
+    if not latest:
+        conn.execute("DELETE FROM user_tiers WHERE profile_id = ? AND movement_key = ?",
+                      (profile_id, movement_key))
+        conn.commit()
+        return 1
+
+    value = latest["hold_seconds"] if latest["ex_metric_type"] == "hold_seconds" else latest["reps"]
+    lo, hi = tier_range(latest["ex_tier"], latest["ex_metric_type"])
+    new_tier = latest["ex_tier"]
+    if value is not None and value >= hi:
+        new_tier = min(latest["ex_tier"] + 1, 6)
+    elif value is not None and value < lo:
+        new_tier = max(latest["ex_tier"] - 1, 1)
+
+    conn.execute("""
+        INSERT INTO user_tiers (profile_id, movement_key, current_tier, updated_at) VALUES (?, ?, ?, ?)
+        ON CONFLICT(profile_id, movement_key) DO UPDATE SET current_tier = excluded.current_tier,
+            updated_at = excluded.updated_at
+    """, (profile_id, movement_key, new_tier, dbmod.now_iso()))
+    conn.commit()
+    return new_tier
+
+
+def update_assessment(conn, profile_id, assessment_id, reps=None, hold_seconds=None, weight_kg=None):
+    row = conn.execute("""
+        SELECT a.*, e.category, e.subcategory FROM assessments a JOIN exercises e ON e.id = a.exercise_id
+        WHERE a.id = ? AND a.profile_id = ?
+    """, (assessment_id, profile_id)).fetchone()
+    if not row:
+        raise ValueError("Assessment not found for this profile.")
+
+    estimated_1rm = None
+    if weight_kg is not None and reps:
+        estimated_1rm = estimate_one_rep_max(weight_kg, reps)
+
+    conn.execute("""
+        UPDATE assessments SET reps = ?, hold_seconds = ?, weight_kg = ?, estimated_1rm = ?
+        WHERE id = ? AND profile_id = ?
+    """, (reps, hold_seconds, weight_kg, estimated_1rm, assessment_id, profile_id))
+    conn.commit()
+
+    return _recompute_tier_for_movement(conn, profile_id, row["category"], row["subcategory"])
+
+
+def delete_assessment(conn, profile_id, assessment_id):
+    row = conn.execute("""
+        SELECT a.*, e.category, e.subcategory FROM assessments a JOIN exercises e ON e.id = a.exercise_id
+        WHERE a.id = ? AND a.profile_id = ?
+    """, (assessment_id, profile_id)).fetchone()
+    if not row:
+        raise ValueError("Assessment not found for this profile.")
+
+    conn.execute("DELETE FROM assessments WHERE id = ? AND profile_id = ?", (assessment_id, profile_id))
+    conn.commit()
+
+    return _recompute_tier_for_movement(conn, profile_id, row["category"], row["subcategory"])
+
+
 CORE_CATEGORIES = ["pull", "push", "core", "legs"]
 
 

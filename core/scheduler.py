@@ -245,27 +245,12 @@ def build_day_exercises(conn, day_def, current_tiers, rng, extra_shoulder=False,
     return picks
 
 
-def generate_schedule(conn, profile_id, days_per_week, plan_name="My Plan", seed=None,
-                       extra_shoulder_mobility=False, extra_hip_mobility=False):
-    """
-    Creates a NEW week's schedule for this profile without deleting
-    previous weeks - past weeks stay queryable for the calendar view.
-    week_number increments per-profile, week_date records the real
-    calendar date it was created.
-    """
-    if days_per_week not in (4, 5):
-        raise ValueError("days_per_week must be 4 or 5")
-    day_defs = DAY_DEFS_4 if days_per_week == 4 else DAY_DEFS_5
-    rng = random.Random(seed)
+def _build_week_days(conn, profile_id, day_defs, days_per_week, plan_name, week_number, week_date,
+                      rng, extra_shoulder_mobility, extra_hip_mobility):
+    """Inserts one full week's days+items and returns the display-ready result -
+    shared by both generate_schedule (new week) and regenerate_current_week
+    (same week, fresh picks)."""
     current_tiers = _get_all_current_tiers(conn, profile_id)
-
-    prev_week = conn.execute(
-        "SELECT COALESCE(MAX(week_number), 0) AS w FROM schedule_days WHERE plan_name = ? AND profile_id = ?",
-        (plan_name, profile_id)
-    ).fetchone()["w"]
-    week_number = prev_week + 1
-    week_date = dbmod.today_str()
-
     result = []
     for idx, day_def in enumerate(day_defs):
         cur = conn.execute(
@@ -293,6 +278,75 @@ def generate_schedule(conn, profile_id, days_per_week, plan_name="My Plan", seed
         })
         conn.commit()
     return result
+
+
+def generate_schedule(conn, profile_id, days_per_week, plan_name="My Plan", seed=None,
+                       extra_shoulder_mobility=False, extra_hip_mobility=False):
+    """
+    Creates a NEW week's schedule for this profile without deleting
+    previous weeks - past weeks stay queryable for the calendar view.
+    week_number increments per-profile, week_date records the real
+    calendar date it was created.
+    """
+    if days_per_week not in (4, 5):
+        raise ValueError("days_per_week must be 4 or 5")
+    day_defs = DAY_DEFS_4 if days_per_week == 4 else DAY_DEFS_5
+    rng = random.Random(seed)
+
+    prev_week = conn.execute(
+        "SELECT COALESCE(MAX(week_number), 0) AS w FROM schedule_days WHERE plan_name = ? AND profile_id = ?",
+        (plan_name, profile_id)
+    ).fetchone()["w"]
+    week_number = prev_week + 1
+    week_date = dbmod.today_str()
+
+    return _build_week_days(conn, profile_id, day_defs, days_per_week, plan_name,
+                             week_number, week_date, rng, extra_shoulder_mobility, extra_hip_mobility)
+
+
+def regenerate_current_week(conn, profile_id, plan_name="My Plan", seed=None,
+                             extra_shoulder_mobility=False, extra_hip_mobility=False):
+    """Wipes and rebuilds the CURRENT (latest) week with fresh picks -
+    same week_number and week_date, doesn't advance history. For 'I don't
+    like this week, redo it' rather than 'move on to a new week'."""
+    row = conn.execute(
+        "SELECT MAX(week_number) AS w FROM schedule_days WHERE plan_name = ? AND profile_id = ?",
+        (plan_name, profile_id)
+    ).fetchone()
+    week_number = row["w"] if row and row["w"] is not None else None
+    if week_number is None:
+        raise ValueError("No week exists yet to regenerate - generate one first.")
+
+    existing_day = conn.execute(
+        "SELECT days_per_week, week_date FROM schedule_days WHERE plan_name = ? AND profile_id = ? "
+        "AND week_number = ? LIMIT 1",
+        (plan_name, profile_id, week_number)
+    ).fetchone()
+    days_per_week = existing_day["days_per_week"]
+    week_date = existing_day["week_date"]
+    day_defs = DAY_DEFS_4 if days_per_week == 4 else DAY_DEFS_5
+    rng = random.Random(seed)
+
+    _delete_week_rows(conn, profile_id, plan_name, week_number)
+    return _build_week_days(conn, profile_id, day_defs, days_per_week, plan_name,
+                             week_number, week_date, rng, extra_shoulder_mobility, extra_hip_mobility)
+
+
+def _delete_week_rows(conn, profile_id, plan_name, week_number):
+    day_ids = [r["id"] for r in conn.execute(
+        "SELECT id FROM schedule_days WHERE plan_name = ? AND profile_id = ? AND week_number = ?",
+        (plan_name, profile_id, week_number)
+    ).fetchall()]
+    for day_id in day_ids:
+        conn.execute("DELETE FROM schedule_items WHERE schedule_day_id = ?", (day_id,))
+    conn.execute("DELETE FROM schedule_days WHERE plan_name = ? AND profile_id = ? AND week_number = ?",
+                 (plan_name, profile_id, week_number))
+    conn.commit()
+
+
+def delete_week(conn, profile_id, week_number, plan_name="My Plan"):
+    """Removes a week (any week, not just the latest) entirely from history."""
+    _delete_week_rows(conn, profile_id, plan_name, week_number)
 
 
 def swap_schedule_item(conn, item_id, new_exercise_id):
