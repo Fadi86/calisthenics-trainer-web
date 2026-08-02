@@ -13,7 +13,11 @@
   <select name="type" onchange="this.form.submit()">
     <option value="all" {{ 'selected' if type_ == 'all' }}>All types</option>
     <option value="main" {{ 'selected' if type_ == 'main' }}>Main</option>
+    <option value="skills" {{ 'selected' if type_ == 'skills' }}>Skills</option>
+    <option value="mobility" {{ 'selected' if type_ == 'mobility' }}>Mobility</option>
+    <option value="conditioning" {{ 'selected' if type_ == 'conditioning' }}>Conditioning</option>
     <option value="extra" {{ 'selected' if type_ == 'extra' }}>Extra</option>
+    <option value="accessory" {{ 'selected' if type_ == 'accessory' }}>Accessory</option>
   </select>
 </form>
 

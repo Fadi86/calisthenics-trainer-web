@@ -4,6 +4,16 @@ Same engine as the Windows app (`core/` is unchanged, copy-pasted) — this
 just swaps CustomTkinter for a Flask web front end, so you open it from
 any browser instead of dealing with iOS sideloading at all.
 
+## v5.3.1 — type filter fix
+
+The "type" dropdown in the Library only ever offered Main/Extra (the raw
+underlying data field), while the badges themselves had already grown to
+six values (main/skills/mobility/conditioning/extra/accessory) - so
+everything looked "mixed together" because the filter couldn't actually
+narrow down to any of the newer classifications. The dropdown now offers
+all six, and filtering works against the same classification the badges
+show, not the old binary field.
+
 ## v5.3.0 — muscle-linked warm-up/mobility in the Library
 
 Selecting a muscle-group category (Legs, Pull, Push, Core) now also shows

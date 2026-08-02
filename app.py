@@ -315,20 +315,19 @@ def library_view():
         conn,
         category=None if category == "all" else category,
         tier=None if tier == "all" else int(tier),
-        type_=None if type_ == "all" else type_,
     )
     for e in exercises:
         e["role_label"], e["role_class"] = library.classify_role(e)
+    exercises = library.filter_by_role(exercises, type_)
 
     related = []
     if category != "all":
         related = library.get_related_prep_exercises(conn, category)
         if tier != "all":
             related = [e for e in related if e["tier"] == int(tier)]
-        if type_ != "all":
-            related = [e for e in related if e["type"] == type_]
         for e in related:
             e["role_label"], e["role_class"] = library.classify_role(e)
+        related = library.filter_by_role(related, type_)
 
     detail_id = request.args.get("exercise")
     detail = None

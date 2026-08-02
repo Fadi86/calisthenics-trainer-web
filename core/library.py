@@ -114,6 +114,15 @@ def classify_role(exercise):
     return "main", "role-main"
 
 
+def filter_by_role(exercises, role):
+    """Filter an already-fetched exercise list by the computed classify_role
+    label (main/skills/mobility/conditioning/extra/accessory) rather than
+    the raw DB 'type' column, which only distinguishes main/extra."""
+    if not role or role == "all":
+        return exercises
+    return [e for e in exercises if classify_role(e)[0] == role]
+
+
 def get_rotation_siblings(conn, exercise_id):
     """Same rotation_group, i.e. valid lateral swaps at the same difficulty."""
     ex = get_exercise(conn, exercise_id)
